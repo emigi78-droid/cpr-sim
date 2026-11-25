@@ -3,804 +3,357 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>재난·응급 분기형 시뮬레이션 V9</title>
+<title>간호 학습 · 재난·응급 시뮬레이션</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9D%A4%3C/text%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #0f1115; --panel: #181b22; --panel-2: #20242d; --line: #2c313c;
     --ink: #eef0f3; --ink-2: #a3a9b5; --accent: #4c9bff;
-    --good: #0aac23; --warning: #fbb315; --critical: #dc3c3d; --neutral: #7d8390;
-    --green: #22a447; --yellow: #f2c200; --red: #e03b3b; --black: #111;
+    --good: #4fd36a; --warn: #fbb315; --bad: #ff6b6b;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+    font: 16px/1.6 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
   button, input, select, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; }
+  a { color: var(--accent); }
   .hidden { display: none !important; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
-  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  h2 { font-size: 20px; margin: 0 0 12px; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(15,17,21,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  .hbar { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .brand { font-weight: 800; letter-spacing: -0.01em; }
+  .who { margin-left: auto; font-size: 13px; color: var(--ink-2); text-align: right; }
+  .who button { background: none; border: 0; color: var(--ink-2); text-decoration: underline; font-size: 13px; padding: 0 0 0 6px; }
+  nav { max-width: 1100px; margin: 0 auto; padding: 0 10px 8px; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  nav a { flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; color: var(--ink-2); text-decoration: none; font-size: 14px; border: 1px solid transparent; }
+  nav a.on { color: var(--ink); border-color: var(--line); background: var(--panel-2); font-weight: 700; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 70px; }
+  h1 { font-size: 24px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 0 0 10px; } h3 { font-size: 16px; margin: 0 0 6px; }
   .sub { color: var(--ink-2); font-size: 14px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .tile { display: block; text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .tile:hover { border-color: var(--accent); }
+  .tile .ic { font-size: 26px; }
+  .tile .st { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
   .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
-  .btn:hover { border-color: var(--ink-2); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  .btn.primary:disabled { opacity: .4; cursor: not-allowed; }
-  .btn.ghost { background: transparent; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-top: 14px; }
   label.f { display: block; font-size: 14px; color: var(--ink-2); margin: 10px 0 4px; }
-  input[type=text], input[type=password], input[type=number], select, textarea {
-    width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
-  textarea { min-height: 110px; resize: vertical; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  input[type=text], input[type=password], select, textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; } @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
   .tabs button { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--line); background: transparent; }
-  .tabs button[aria-selected=true] { background: var(--panel-2); border-color: var(--ink-2); font-weight: 600; }
-  .msg { min-height: 22px; font-size: 14px; margin-top: 10px; }
-  .msg.err { color: #ff8a8a; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
-  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
-
-  /* ── 무대 ── */
-  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .who { font-size: 14px; color: var(--ink-2); }
-  .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 14px; overflow: hidden;
-           border: 1px solid var(--line); }
-  .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
-  .stage.dim video, .stage.dim .ph { filter: brightness(.35) blur(1px); transition: filter .4s; }
-  /* 결정 순간에는 영상 영역을 줄여 질문이 한 화면에 보이게 */
-  .stage.dim { aspect-ratio: auto; height: min(30vh, 56.25vw); }
-  .stage.dim .ph .d { display: none; }
-  .ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        text-align: center; padding: 8% 10%; background: radial-gradient(ellipse at center, #232a36 0%, #0b0d11 75%); }
-  .ph.wrong { background: radial-gradient(ellipse at center, #3a1f22 0%, #0b0d11 75%); }
-  .ph .tag { font-size: 12px; letter-spacing: .08em; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin-bottom: 14px; }
-  .ph .t { font-size: clamp(18px, 3vw, 30px); font-weight: 700; margin-bottom: 10px; }
-  .ph .d { font-size: clamp(14px, 1.9vw, 19px); color: #cfd4dc; max-width: 760px; }
-  .hud { position: absolute; top: 10px; left: 12px; font-size: 13px; color: #fff; background: rgba(0,0,0,.45);
-         padding: 3px 10px; border-radius: 999px; }
-  .banner { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.7);
-            border: 1px solid rgba(255,255,255,.25); color: #fff; font-weight: 700; padding: 6px 16px; border-radius: 10px;
-            font-size: clamp(13px, 1.8vw, 18px); white-space: nowrap; }
-  .vitals { position: absolute; top: 46px; right: 12px; background: rgba(6,10,14,.82); border: 1px solid #2f6f45;
-            border-radius: 10px; padding: 8px 12px; font-variant-numeric: tabular-nums; min-width: 170px; }
-  .vitals div { display: flex; justify-content: space-between; gap: 14px; font-size: clamp(12px, 1.5vw, 16px); }
-  .vitals b { color: #5ff58a; font-weight: 700; }
-  .vitals .warn b { color: #ffb84d; }
-  .subs { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); width: min(92%, 900px); text-align: center; }
-  .subs span { background: rgba(0,0,0,.72); color: #fff; padding: 4px 12px; border-radius: 6px; line-height: 1.8;
-               font-size: clamp(14px, 2vw, 21px); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-  .subs em { font-style: normal; color: #9fd0ff; margin-right: 6px; }
-  .skip { position: absolute; right: 12px; bottom: 10px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.3);
-          color: #fff; border-radius: 8px; padding: 4px 10px; font-size: 13px; }
-  .metro { position: absolute; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13px;
-           background: rgba(0,0,0,.5); padding: 4px 10px; border-radius: 999px; }
-  .metro i { width: 12px; height: 12px; border-radius: 50%; background: #ff5a5a; opacity: .25; }
-  .metro i.on { opacity: 1; }
-  .idcards { position: absolute; top: 46px; right: 12px; display: grid; gap: 8px; width: min(40%, 300px); }
-  .idc { background: #f6f1e6; color: #222; border-radius: 10px; padding: 8px 12px; font-size: clamp(11px, 1.4vw, 14px);
-         box-shadow: 0 4px 14px rgba(0,0,0,.4); }
-  .idc b { display: block; color: #b3261e; font-size: 1.05em; }
-  .aed { position: absolute; top: 46px; right: 12px; width: min(42%, 340px); background: #222; border: 3px solid #f1771f;
-         border-radius: 14px; padding: 10px; color: #fff; }
-  .aed .scr { background: #071a10; border-radius: 8px; padding: 6px 8px; }
-  .aed canvas { width: 100%; height: 70px; display: block; }
-  .aed .say { font-size: clamp(12px, 1.5vw, 15px); margin-top: 6px; font-weight: 600; }
-  .aed .shock { margin-top: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
-  .aed .shock i { width: 30px; height: 30px; border-radius: 50%; background: #f1771f; animation: blink 0.8s infinite; }
-  @keyframes blink { 50% { opacity: .25; } }
-
-  /* ── 결정 패널 ── */
-  .decision { margin-top: 14px; }
-  .decision .q { font-size: clamp(17px, 2.2vw, 21px); font-weight: 700; margin: 0 0 12px; }
-  .timer { height: 8px; background: var(--panel-2); border-radius: 999px; overflow: hidden; margin-bottom: 12px; }
-  .timer i { display: block; height: 100%; background: var(--warning); width: 100%; }
-  .timer-label { font-size: 13px; color: var(--warning); margin: -6px 0 10px; font-variant-numeric: tabular-nums; }
-  .opts { display: grid; gap: 10px; }
-  .opt { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px;
-         display: flex; gap: 12px; align-items: flex-start; }
-  .opt:hover { border-color: var(--accent); }
-  .opt .k { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; background: var(--panel-2); display: grid; place-items: center; font-weight: 700; }
-  .opt.sel { border-color: var(--accent); background: #16263d; }
-  .opt input { margin-top: 6px; transform: scale(1.2); }
-  .tri { display: grid; gap: 10px; }
-  .tri .p { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid;
-            grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-  @media (max-width: 640px) { .tri .p { grid-template-columns: 1fr; } }
-  .tri .who2 { font-weight: 700; margin-right: 6px; }
-  .tags { display: flex; gap: 6px; }
-  .tags button { border: 2px solid transparent; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 14px; color: #fff; }
-  .tags .green { background: var(--green); } .tags .yellow { background: var(--yellow); color: #111; }
-  .tags .red { background: var(--red); } .tags .black { background: var(--black); border-color: #555; }
-  .tags button { opacity: .45; } .tags button.sel { opacity: 1; outline: 3px solid #fff; outline-offset: 1px; }
-  .pads { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: 16px; align-items: start; }
-  @media (max-width: 700px) { .pads { grid-template-columns: 1fr; } }
-  .pads svg { width: 100%; background: #10141b; border-radius: 12px; border: 1px solid var(--line); cursor: crosshair; touch-action: manipulation; }
-  .sbar-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
-  @media (max-width: 700px) { .sbar-slots { grid-template-columns: 1fr 1fr; } }
-  .slot { min-height: 96px; border: 2px dashed var(--line); border-radius: 12px; padding: 8px 10px; font-size: 14px; background: var(--panel); text-align: left; }
-  .slot b { display: block; font-size: 18px; color: var(--accent); }
-  .slot.filled { border-style: solid; border-color: var(--accent); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
-  .cards button { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
-  .cards button:disabled { opacity: .25; cursor: default; }
-  .actions { margin-top: 14px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
-
-  /* ── 결과 ── */
-  .ending { border-radius: 14px; padding: 22px; margin-bottom: 16px; border: 1px solid var(--line); }
-  .ending.correct { background: linear-gradient(135deg, #0f2e1b, #121820); border-color: #1f6b3a; }
-  .ending.partial { background: linear-gradient(135deg, #33290c, #121820); border-color: #7a6116; }
-  .ending.critical { background: linear-gradient(135deg, #3a1214, #121820); border-color: #7c2427; }
-  .ending .code { font-size: 13px; color: var(--ink-2); letter-spacing: .06em; }
-  .ending .lab { font-size: 28px; font-weight: 800; margin: 2px 0 6px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-  .kpi .k { font-size: 13px; color: var(--ink-2); } .kpi .v { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .tabs button[aria-selected=true] { background: var(--panel-2); border-color: var(--ink-2); font-weight: 700; }
+  .msg { min-height: 22px; font-size: 14px; margin-top: 8px; } .msg.err { color: var(--bad); }
+  .stack > * + * { margin-top: 12px; }
+  /* 퀴즈 */
+  .q { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .q .no { font-size: 13px; color: var(--ink-2); }
+  .q .stem { font-weight: 700; margin: 4px 0 10px; }
+  .q label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; }
+  .q label:hover { background: var(--panel-2); }
+  .q input { margin-top: 6px; transform: scale(1.15); }
+  .q label.right { border-color: var(--good); background: rgba(79,211,106,.08); }
+  .q label.wrong { border-color: var(--bad); background: rgba(255,107,107,.08); }
+  .q .exp { margin-top: 10px; background: var(--panel-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .mark { font-weight: 800; } .mark.ok { color: var(--good); } .mark.no { color: var(--bad); }
+  .score { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  /* 술기 */
+  .steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  .steps li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); align-items: start; }
+  .steps li .n { width: 30px; height: 30px; border-radius: 8px; background: var(--panel-2); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  .steps li.star .n { background: #3a2a0c; color: var(--warn); outline: 1px solid var(--warn); }
+  .steps li label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .steps li input { margin-top: 6px; transform: scale(1.2); flex: 0 0 auto; }
+  .steps li.done .txt { color: var(--ink-2); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.25); }
+  .steps .note { font-size: 13px; color: var(--ink-2); margin-top: 4px; background: var(--panel-2); border-radius: 8px; padding: 6px 10px; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1px solid currentColor; }
+  .badge.star { color: var(--warn); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips span { font-size: 13px; background: var(--panel-2); border-radius: 999px; padding: 2px 10px; }
+  .prog { height: 8px; border-radius: 999px; background: var(--panel-2); overflow: hidden; margin-top: 8px; }
+  .prog i { display: block; height: 100%; background: var(--accent); }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--ink-2); font-weight: 500; }
-  td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .vt { font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
-  .vt.correct { color: #4fd36a; } .vt.partial { color: var(--warning); } .vt.wrong { color: var(--neutral); }
-  .vt.critical { color: #ff6b6b; } .vt.none { color: var(--ink-2); }
-  .fb { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
-  .delays li { margin: 4px 0; }
-  .closing { list-style: none; padding: 0; margin: 0; }
-  .closing li { padding: 6px 0; border-bottom: 1px solid var(--line); }
-  .closing li:last-child { border: 0; }
-  .sec { margin-top: 16px; }
-  .lik { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
-  @media (max-width: 640px) { .lik { grid-template-columns: 1fr; } }
-  .lik .scale { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink-2); }
-  .lik .scale button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 700; }
-  .lik .scale button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #2a2f39; border: 1px solid var(--line);
-           padding: 8px 14px; border-radius: 10px; font-size: 14px; z-index: 50; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); } th { color: var(--ink-2); font-weight: 500; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .end-A { color: var(--good); } .end-B { color: var(--warn); } .end-C, .end-D, .end-E { color: var(--bad); }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #2a2f39; border: 1px solid var(--line); padding: 8px 14px; border-radius: 10px; font-size: 14px; z-index: 50; }
+  .sticky-bar { position: sticky; bottom: 0; background: rgba(15,17,21,.95); border-top: 1px solid var(--line); padding: 10px 0; margin-top: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<header class="hidden" id="hdr">
+  <div class="hbar"><span class="brand">🩺 간호 학습</span><span class="who" id="who"></span></div>
+  <nav id="nav">
+    <a href="#home">홈</a><a href="#pretest">사전학습 퀴즈</a><a href="#bank">문제은행</a><a href="#wrong">오답노트</a>
+    <a href="#skills">핵심술기</a><a href="sim.html">시뮬레이션</a><a href="#me">내 기록</a>
+  </nav>
+</header>
+<main id="main"></main>
 
-  <!-- 로그인 -->
-  <section id="scrLogin">
-    <h1>재난·응급 분기형 시뮬레이션</h1>
-    <p class="sub">폭우로 인한 터널 붕괴 — 다수사상자 대응과 심정지 환자 소생 (V9 프로토타입)</p>
-    <div class="card" style="max-width:520px;margin-top:18px">
-      <div class="tabs" role="tablist">
-        <button id="tabLogin" role="tab" aria-selected="true">로그인</button>
-        <button id="tabReg" role="tab" aria-selected="false">회원가입</button>
-      </div>
-      <form id="fLogin">
-        <label class="f">학번</label><input type="text" name="studentNo" autocomplete="username" required>
-        <label class="f">비밀번호</label><input type="password" name="password" autocomplete="current-password" required>
-        <div class="actions"><button class="btn primary" type="submit">로그인</button></div>
-      </form>
-      <form id="fReg" class="hidden">
-        <div class="grid2">
-          <div><label class="f">학번 *</label><input type="text" name="studentNo" required></div>
-          <div><label class="f">이름 *</label><input type="text" name="name" required></div>
-          <div><label class="f">비밀번호 * (6자 이상)</label><input type="password" name="password" minlength="6" required></div>
-          <div><label class="f">분반 코드 * (교수님께 받은 코드)</label><input type="text" name="classCode" required></div>
-          <div><label class="f">학교</label><input type="text" name="school"></div>
-          <div><label class="f">학과</label><input type="text" name="dept"></div>
-          <div><label class="f">학년</label><select name="grade"><option></option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
-        </div>
-        <label class="row" style="margin-top:12px;font-size:14px">
-          <input type="checkbox" name="consent"> 학습 기록(선택, 응답 시간, 점수, 성찰)과 학번·이름 수집에 동의합니다. 수업 운영과 디브리핑에만 사용합니다.
-        </label>
-        <div class="actions"><button class="btn primary" type="submit">가입하고 시작</button></div>
-      </form>
-      <div class="msg" id="loginMsg"></div>
-      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
-      <button class="btn ghost" id="btnGuest">로그인 없이 체험하기 (기록되지 않음)</button>
-    </div>
-  </section>
-
-  <!-- 사전 브리핑 -->
-  <section id="scrBrief" class="hidden">
-    <div class="topbar"><h1>사전 브리핑</h1><span class="who" id="who1"></span></div>
-    <div class="card">
-      <h2>당신은 퇴근길 터널에 갇힌 간호사입니다</h2>
-      <p>장마철 집중호우 속, 왕복 2차선 터널을 지나던 중 터널 일부가 무너집니다. 현장에는 부상자들이 있고,
-        추가 붕괴 위험이 남아 있습니다. 당신은 현장의 유일한 의료인으로서 판단하고 지시해야 합니다.</p>
-      <ul>
-        <li><b>선택은 되돌릴 수 없습니다.</b> 선택에 따라 이야기가 달라지고, 결말도 달라집니다.</li>
-        <li>일부 질문에는 <b>제한 시간</b>(10~20초)이 있습니다. 실제 현장처럼 망설이는 시간도 기록됩니다.</li>
-        <li>정답 여부는 <b>마지막 리포트</b>에서 한꺼번에 공개됩니다.</li>
-        <li>이 시뮬레이션은 평가가 아니라 학습을 위한 것입니다. 실수해도 괜찮습니다. 끝난 뒤 함께 이야기합니다.</li>
-      </ul>
-      <h2 style="margin-top:18px">설정</h2>
-      <div class="grid2">
-        <div><label class="f">임시 컷 재생 시간 (영상이 아직 없는 장면)</label>
-          <select id="setPh"><option value="4">짧게 (4초)</option><option value="6" selected>보통 (6초)</option><option value="10">길게 (10초)</option></select></div>
-        <div><label class="f">음성 안내 (임시 컷 대사·AED 음성을 기계음으로 읽기)</label>
-          <select id="setTts"><option value="on" selected>켜기</option><option value="off">끄기</option></select></div>
-      </div>
-      <p class="sub" style="margin-top:14px">🎧 소리를 켜 주세요. 컴퓨터나 태블릿 화면을 권장합니다.</p>
-      <div class="actions"><button class="btn primary" id="btnStart">시뮬레이션 시작</button></div>
-    </div>
-  </section>
-
-  <!-- 플레이 -->
-  <section id="scrPlay" class="hidden">
-    <div class="topbar"><strong id="playTitle">재난·응급 시뮬레이션</strong><span class="who" id="who2"></span></div>
-    <div class="stage" id="stage">
-      <video id="vid" playsinline preload="auto"></video>
-      <div class="ph hidden" id="ph"><span class="tag">임시 컷 · 영상 제작 예정</span><div class="t" id="phT"></div><div class="d" id="phD"></div></div>
-      <div class="hud" id="hud"></div>
-      <div class="banner hidden" id="banner"></div>
-      <div class="vitals hidden" id="vitals"></div>
-      <div class="idcards hidden" id="idcards">
-        <div class="idc"><b>응급 식별표 · 심근경색 환자</b>관상동맥질환 · 흉통 시 NTG 설하 복용</div>
-        <div class="idc"><b>관상동맥 스텐트 시술 확인카드</b>스텐트 삽입술 시행</div>
-        <div class="idc"><b>Nitroglycerin 0.4 mg</b>설하정 · 흉통 시 1정</div>
-      </div>
-      <div class="aed hidden" id="aed">
-        <div class="scr"><canvas id="ecg" width="600" height="140"></canvas></div>
-        <div class="say" id="aedSay"></div>
-        <div class="shock hidden" id="aedShock"><i></i>충격 버튼</div>
-      </div>
-      <div class="metro hidden" id="metro"><i id="metroDot"></i>110회/분</div>
-      <div class="subs" id="subs"></div>
-      <button class="skip hidden" id="btnSkip">건너뛰기 ▶▶</button>
-    </div>
-    <div class="decision hidden" id="decision"></div>
-  </section>
-
-  <!-- 결과 -->
-  <section id="scrResult" class="hidden">
-    <div class="topbar"><h1>결과 리포트</h1><span class="who" id="who3"></span></div>
-    <div id="resultBody"></div>
-  </section>
-</div>
-
-<script src="scenario.js"></script>
+<script src="skills.js"></script>
 <script>
-/* ───────── 설정 ───────── */
 const API_URL = 'https://script.google.com/macros/s/AKfycbyzkpBY382Mk6K7xkDGeG-ZnCpCqLiThpim0p-NMxfwHOnp8QCZpg2zH2ygN28gvm17yg/exec';
-const SC = window.SCENARIO;
-const N = SC.nodes;
-const DP_ORDER = ['DP1', 'DP2', 'DP3', 'DP4-1', 'DP4-2', 'DP5', 'DP6', 'DP7', 'DP8-1', 'DP8-2', 'DP8-3', 'DP9'];
-const VERDICT_LABEL = { correct: '✓ 정답', partial: '⚠ 부분', wrong: '오답', critical: '☠ 치명', none: '미도달' };
-
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-function toast(t, ms = 2600) {
-  const el = document.createElement('div'); el.className = 'toast'; el.textContent = t;
-  document.body.appendChild(el); setTimeout(() => el.remove(), ms);
-}
-function show(id) {
-  ['scrLogin', 'scrBrief', 'scrPlay', 'scrResult'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
-  window.scrollTo(0, 0);
-}
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const M = () => $('main');
+function toast(t) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
+const fmtDate = (d) => d ? new Date(d).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
-/* ───────── 서버 통신 ───────── */
-const session = JSON.parse(sessionStorage.getItem('simSession') || 'null') || { guest: false };
+/* ── 세션 (시뮬레이션과 공유) ── */
+let session = JSON.parse(sessionStorage.getItem('simSession') || 'null') || {};
+const saveSession = () => sessionStorage.setItem('simSession', JSON.stringify(session));
+const loggedIn = () => !!session.token;
+
 async function api(action, body = {}) {
-  const res = await fetch(API_URL, {
-    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(Object.assign({ action, token: session.token }, body))
-  });
+  const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action, token: session.token }, body)) });
   const j = await res.json();
-  if (!j.ok) throw new Error(j.error || '서버 오류');
+  if (!j.ok) {
+    if (/로그인이 만료/.test(j.error || '')) { session = {}; saveSession(); toast('로그인이 만료되었습니다.'); route(); }
+    throw new Error(j.error || '서버 오류');
+  }
   return j;
 }
-const pending = []; // 전송 실패한 기록 (마지막에 재시도)
-function record(action, body) {
-  if (session.guest) return Promise.resolve();
-  return api(action, body).catch(() => { pending.push([action, body]); });
+const loading = (t = '불러오는 중…') => { M().innerHTML = `<p class="sub">${t}</p>`; };
+const needLogin = () => { M().innerHTML = `<div class="card"><h2>로그인이 필요합니다</h2><p class="sub">퀴즈·오답노트·기록은 로그인해야 저장됩니다.</p>
+  <div class="actions" style="justify-content:flex-start"><button class="btn primary" onclick="logout()">로그인하러 가기</button></div></div>`; };
+
+/* ── 로그인 ── */
+function viewLogin() {
+  $('hdr').classList.add('hidden');
+  M().innerHTML = `
+    <h1>🩺 간호 학습</h1><p class="sub">재난·응급 분기형 시뮬레이션 · 핵심술기 · 문제은행</p>
+    <div class="card" style="max-width:520px;margin-top:16px">
+      <div class="tabs"><button id="tL" aria-selected="true">로그인</button><button id="tR" aria-selected="false">회원가입</button></div>
+      <form id="fL"><label class="f">학번</label><input type="text" name="studentNo" autocomplete="username" required>
+        <label class="f">비밀번호</label><input type="password" name="password" autocomplete="current-password" required>
+        <div class="actions"><button class="btn primary">로그인</button></div></form>
+      <form id="fR" class="hidden"><div class="grid2">
+        <div><label class="f">학번 *</label><input type="text" name="studentNo" required></div>
+        <div><label class="f">이름 *</label><input type="text" name="name" required></div>
+        <div><label class="f">비밀번호 * (6자 이상)</label><input type="password" name="password" minlength="6" required></div>
+        <div><label class="f">분반 코드 *</label><input type="text" name="classCode" required></div>
+        <div><label class="f">학교</label><input type="text" name="school"></div>
+        <div><label class="f">학과</label><input type="text" name="dept"></div>
+        <div><label class="f">학년</label><select name="grade"><option></option><option>1</option><option>2</option><option>3</option><option>4</option></select></div></div>
+        <label style="display:flex;gap:8px;margin-top:12px;font-size:14px"><input type="checkbox" name="consent"> 학습 기록(문제 풀이, 시뮬레이션 선택·응답 시간, 술기 체크, 성찰)과 학번·이름 수집에 동의합니다. 수업 운영과 디브리핑에만 사용합니다.</label>
+        <div class="actions"><button class="btn primary">가입하기</button></div></form>
+      <div class="msg" id="lm"></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <button class="btn" id="guest">로그인 없이 둘러보기 (핵심술기·시뮬레이션 체험만)</button>
+    </div>`;
+  const tab = (r) => { $('tL').setAttribute('aria-selected', !r); $('tR').setAttribute('aria-selected', r); $('fL').classList.toggle('hidden', r); $('fR').classList.toggle('hidden', !r); };
+  $('tL').onclick = () => tab(false); $('tR').onclick = () => tab(true);
+  const msg = (t, e) => { $('lm').textContent = t; $('lm').className = 'msg' + (e ? ' err' : ''); };
+  const done = (r) => { session = { token: r.token, user: r.user, guest: false }; saveSession(); location.hash = '#home'; route(); };
+  $('fL').onsubmit = async (e) => { e.preventDefault(); const f = new FormData(e.target); msg('로그인 중…');
+    try { done(await api('login', { studentNo: f.get('studentNo').trim(), password: f.get('password') })); } catch (err) { msg(err.message, true); } };
+  $('fR').onsubmit = async (e) => { e.preventDefault(); const f = new FormData(e.target);
+    if (!f.get('consent')) return msg('기록 수집에 동의해야 가입할 수 있습니다.', true); msg('가입 중…');
+    try { done(await api('register', { studentNo: f.get('studentNo').trim(), name: f.get('name').trim(), password: f.get('password'),
+      classCode: f.get('classCode').trim(), school: f.get('school'), dept: f.get('dept'), grade: f.get('grade'), consent: true })); }
+    catch (err) { msg(err.message, true); } };
+  $('guest').onclick = () => { session = { guest: true, user: { name: '둘러보기' } }; saveSession(); location.hash = '#skills'; route(); };
+}
+function logout() { session = {}; saveSession(); location.hash = ''; route(); }
+
+/* ── 홈 ── */
+let progressCache = null;
+async function getProgress(force) {
+  if (!loggedIn()) return null;
+  if (!progressCache || force) progressCache = await api('getMyProgress');
+  return progressCache;
+}
+async function viewHome() {
+  const u = session.user || {};
+  M().innerHTML = `<h1>${esc(u.name || '')}님, 안녕하세요</h1><p class="sub">${loggedIn() ? esc(u.classCode) + ' · 오늘도 한 걸음씩' : '둘러보기 모드 · 기록되지 않습니다'}</p>
+    <div class="grid" style="margin-top:16px" id="tiles">${tiles(null, loggedIn())}</div>`;
+  try { const p = await getProgress(true); if (p) $('tiles').innerHTML = tiles(p); } catch (e) {}
+}
+function tiles(p, pending) {
+  const pre = p && p.quiz.pretest, lastSim = p && p.sims[0];
+  const skillDone = p ? Object.keys(p.skills).length : 0;
+  const T = (href, ic, t, d, st) => `<a class="tile" href="${href}"><div class="ic">${ic}</div><h3>${t}</h3><div class="sub">${d}</div>${pending ? '<div class="st">진도 불러오는 중…</div>' : st ? `<div class="st">${st}</div>` : ''}</a>`;
+  return [
+    T('#pretest', '📝', '사전학습 퀴즈', '시뮬레이션 전 15문항 중 무작위 5문항', pre ? `최근 ${pre.last.correct}/${pre.last.total} · ${pre.count}회 응시` : '아직 풀지 않음'),
+    T('sim.html', '🚨', '재난·응급 시뮬레이션', '터널 붕괴 · 심정지 환자 소생 (분기형)', lastSim ? `최근 결말 <b class="end-${String(lastSim.ending).slice(-1)}">${esc(lastSim.ending)}</b> · ${lastSim.score}점` : '아직 플레이하지 않음'),
+    T('#skills', '🩺', '핵심술기', '활력징후 · 경구투약 · 피하주사 · CPR·AED', p ? `셀프 체크 ${skillDone} / ${SKILLS.length}개 술기` : `${SKILLS.length}개 술기`),
+    T('#bank', '📚', '문제은행', '과목·단원별 문제 풀이', p ? `푼 문항 ${p.bank.solved}개 · 현재 정답 ${p.bank.correctNow}개` : ''),
+    T('#wrong', '🔁', '오답노트', '틀린 문제만 다시 풀기', p ? `남은 오답 ${p.bank.wrongNow}개` : ''),
+    T('#me', '📈', '내 기록', '퀴즈 · 시뮬레이션 · 술기 이력', '')
+  ].join('');
 }
 
-/* ───────── 로그인 화면 ───────── */
-function setTab(reg) {
-  $('tabLogin').setAttribute('aria-selected', !reg); $('tabReg').setAttribute('aria-selected', reg);
-  $('fLogin').classList.toggle('hidden', reg); $('fReg').classList.toggle('hidden', !reg); $('loginMsg').textContent = '';
-}
-$('tabLogin').onclick = () => setTab(false);
-$('tabReg').onclick = () => setTab(true);
-function loginMsg(t, err) { $('loginMsg').textContent = t; $('loginMsg').className = 'msg' + (err ? ' err' : ''); }
-function afterLogin(r) {
-  session.guest = false; session.token = r.token; session.user = r.user;
-  sessionStorage.setItem('simSession', JSON.stringify(session)); toBrief();
-}
-$('fLogin').onsubmit = async (e) => {
-  e.preventDefault(); const f = new FormData(e.target); loginMsg('로그인 중…');
-  try { afterLogin(await api('login', { studentNo: f.get('studentNo').trim(), password: f.get('password') })); }
-  catch (err) { loginMsg(err.message, true); }
-};
-$('fReg').onsubmit = async (e) => {
-  e.preventDefault(); const f = new FormData(e.target);
-  if (!f.get('consent')) return loginMsg('기록 수집에 동의해야 가입할 수 있습니다.', true);
-  loginMsg('가입 중…');
-  try {
-    afterLogin(await api('register', {
-      studentNo: f.get('studentNo').trim(), name: f.get('name').trim(), password: f.get('password'),
-      classCode: f.get('classCode').trim(), school: f.get('school'), dept: f.get('dept'), grade: f.get('grade'), consent: true
-    }));
-  } catch (err) { loginMsg(err.message, true); }
-};
-$('btnGuest').onclick = () => { session.guest = true; session.user = { name: '체험 모드' }; toBrief(); };
-function whoText() {
-  return session.guest ? '체험 모드 · 기록되지 않음' : `${session.user.name} (${session.user.studentNo}) · ${session.user.classCode}`;
-}
-function toBrief() { ['who1', 'who2', 'who3'].forEach((i) => ($(i).textContent = whoText())); show('scrBrief'); }
-
-/* ───────── 게임 상태 ───────── */
-let S;
-function newState() {
-  return { node: SC.start, cprDelay: 0, sceneDelay: 0, flags: {}, ending: null, triage: {},
-           log: {}, delays: [], attemptId: null, startedAt: Date.now() };
-}
-function applyEffects(dp, eff) {
-  if (!eff) return;
-  if (eff.cprDelay) { S.cprDelay += eff.cprDelay; S.delays.push({ dp, sec: eff.cprDelay, kind: '가슴압박 지연' }); }
-  if (eff.sceneDelay) { S.sceneDelay += eff.sceneDelay; S.delays.push({ dp, sec: eff.sceneDelay, kind: '재난 대응 지연' }); }
-  if (eff.flag) S.flags[eff.flag] = true;
-}
-
-$('btnStart').onclick = async () => {
-  settings.ph = Number($('setPh').value); settings.tts = $('setTts').value === 'on';
-  unlockAudio();
-  S = newState();
-  show('scrPlay');
-  if (!session.guest) {
-    try { S.attemptId = (await api('startAttempt', { scenario: SC.version })).attemptId; }
-    catch (err) {
-      if (/로그인/.test(err.message)) { toast('로그인이 만료되었습니다. 다시 로그인하세요.'); sessionStorage.removeItem('simSession'); return show('scrLogin'); }
-      toast('서버 연결이 불안정합니다. 기록은 끝에서 다시 시도합니다.');
-    }
-  }
-  run(SC.start);
-};
-
-/* ───────── 진행 엔진 ───────── */
-const settings = { ph: 6, tts: true };
-async function run(id) {
-  while (id) {
-    S.node = id;
-    const n = N[id];
-    if (id === 'END') return finish();
-    if (!n) { console.error('없는 노드', id); return finish(); }
-    if (n.ending) S.ending = n.ending;
-    if (n.type === 'video') { await playNode(id, n); id = typeof n.route === 'function' ? n.route(S) : n.next; }
-    else if (n.type === 'decision') { id = await decide(id, n); }
-    else if (n.type === 'judge') { id = judge(n); }
-  }
-}
-
-function judge(n) {
-  const d = S.cprDelay;
-  if (d <= n.thresholds.a) { S.ending = S.flags.hypoglycemia ? 'END-B' : 'END-A'; return S.ending === 'END-A' ? 'N18' : 'N18B'; }
-  if (d <= n.thresholds.b) { S.ending = 'END-B'; return 'N18B'; }
-  S.ending = 'END-C'; return 'ENDC_CLIP';
-}
-
-/* ───────── 영상 / 임시 컷 재생 ───────── */
-let skipFlag = false;
-$('btnSkip').onclick = () => { skipFlag = true; vid.pause(); speechSynthesis.cancel(); };
-const vid = $('vid');
-
-async function playNode(id, n) {
-  skipFlag = false;
-  $('stage').classList.remove('dim');
-  $('decision').classList.add('hidden');
-  $('hud').textContent = n.title + (n.wrong ? '' : '');
-  setOverlays(n);
-  $('btnSkip').classList.remove('hidden');
-  const clips = (n.clips || []).slice();
-  let played = false;
-  for (const src of clips) {
-    if (skipFlag) break;
-    const ok = await playClip(src, n.lines);
-    if (ok) played = true;
-  }
-  if (!played && !skipFlag) await playPlaceholder(n);
-  $('btnSkip').classList.add('hidden');
-  stopMetronome();
-  $('subs').innerHTML = '';
-}
-
-function playClip(src, lines) {
-  return new Promise((resolve) => {
-    $('ph').classList.add('hidden'); vid.classList.remove('hidden');
-    let subTimer = null, done = false;
-    const end = (ok) => {
-      if (done) return; done = true; clearInterval(subTimer); clearInterval(skipPoll);
-      vid.onended = vid.onerror = vid.onloadedmetadata = null; resolve(ok);
-    };
-    const skipPoll = setInterval(() => skipFlag && end(true), 150);
-    vid.onerror = () => end(false);
-    vid.onended = () => end(true);
-    vid.onloadedmetadata = () => {
-      const L = lines || [];
-      if (!L.length) return;
-      let i = 0; showSub(L[0]);
-      const step = Math.max(2500, (vid.duration * 1000) / L.length);
-      subTimer = setInterval(() => { i++; if (i < L.length) showSub(L[i]); }, step);
-    };
-    vid.src = encodeURI(src);
-    vid.play().catch(() => end(false));
-  });
-}
-
-async function playPlaceholder(n) {
-  vid.pause(); vid.removeAttribute('src'); vid.load(); vid.classList.add('hidden');
-  $('ph').classList.remove('hidden'); $('ph').classList.toggle('wrong', !!n.wrong);
-  $('phT').textContent = n.title; $('phD').textContent = n.desc || '';
-  const L = n.lines || [];
-  const t0 = Date.now();
-  if (settings.tts && L.length && 'speechSynthesis' in window) {
-    for (const line of L) {
-      if (skipFlag) break;
-      showSub(line);
-      await speak(line[1]);
-      await sleep(250);
-    }
-  } else {
-    const per = (settings.ph * 1000) / Math.max(L.length, 1);
-    for (const line of L.length ? L : [null]) {
-      if (skipFlag) break;
-      if (line) showSub(line);
-      await waitOrSkip(per);
-    }
-  }
-  const rest = settings.ph * 1000 - (Date.now() - t0);
-  if (rest > 0 && !skipFlag) await waitOrSkip(Math.min(rest, 2500));
-}
-async function waitOrSkip(ms) { const t = Date.now(); while (Date.now() - t < ms && !skipFlag) await sleep(100); }
-
-function showSub(line) {
-  if (!line) return;
-  const [who, text] = line;
-  $('subs').innerHTML = `<span>${who ? `<em>${esc(who)}</em>` : ''}${esc(text)}</span>`;
-}
-
-/* 기계음 (Web Speech) */
-let koVoice = null;
-function pickVoice() { koVoice = speechSynthesis.getVoices().find((v) => /ko/i.test(v.lang)) || null; }
-if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-function speak(text) {
-  return new Promise((resolve) => {
-    const clean = String(text).replace(/[()]/g, '');
-    if (!clean.trim() || !('speechSynthesis' in window)) return resolve();
-    const u = new SpeechSynthesisUtterance(clean);
-    u.lang = 'ko-KR'; if (koVoice) u.voice = koVoice; u.rate = 1.08;
-    const guard = setTimeout(resolve, Math.max(3000, clean.length * 260));
-    u.onend = u.onerror = () => { clearTimeout(guard); resolve(); };
-    speechSynthesis.speak(u);
-  });
-}
-
-/* ───────── 오버레이 ───────── */
-function setOverlays(n) {
-  $('banner').classList.toggle('hidden', !n.banner); $('banner').textContent = n.banner || '';
-  // 활력징후
-  let v = n.vitals ? Object.assign({}, n.vitals) : null;
-  if (v && S.flags.hypoglycemia && (S.node === 'N18' || S.node === 'N18B')) v.BST = '48 mg/dL ⚠';
-  if (n.keepVitals && S.lastVitals) v = S.lastVitals;
-  if (v) { S.lastVitals = v; }
-  $('vitals').classList.toggle('hidden', !v);
-  if (v) $('vitals').innerHTML = Object.entries(v).map(([k, val]) =>
-    `<div class="${/⚠/.test(val) ? 'warn' : ''}"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join('');
-  // 식별표
-  $('idcards').classList.toggle('hidden', n.overlay !== 'idcard');
-  // AED
-  const aedMode = n.overlay && n.overlay.startsWith('aed') ? n.overlay : null;
-  $('aed').classList.toggle('hidden', !aedMode);
-  if (aedMode) startECG(aedMode);
-  else stopECG();
-  // 분류 결과
-  if (n.showTriage) {
-    const names = { green: '녹색', yellow: '황색', red: '적색', black: '흑색' };
-    $('banner').classList.remove('hidden');
-    $('banner').textContent = 'START 분류: ' + Object.entries(S.triage).map(([k, c]) => `${k} ${names[c] || '-'}`).join(' · ');
-  }
-  // 메트로놈
-  if (n.metronome) startMetronome(); else stopMetronome();
-}
-
-/* AED 심전도 캔버스 */
-let ecgRAF = null;
-function startECG(mode) {
-  const say = { 'aed-analyze': '🔊 심장리듬을 분석합니다. 환자에게서 떨어지십시오.',
-                'aed-shock': '🔊 제세동이 필요합니다. 충전 완료. 깜빡이는 버튼을 누르십시오.',
-                'aed-noshock': '🔊 제세동이 필요하지 않습니다. 가슴압박을 계속하십시오.' }[mode];
-  $('aedSay').textContent = say;
-  $('aedShock').classList.toggle('hidden', mode !== 'aed-shock');
-  const c = $('ecg'), g = c.getContext('2d');
-  let x = 0, t = 0;
-  cancelAnimationFrame(ecgRAF);
-  g.fillStyle = '#071a10'; g.fillRect(0, 0, c.width, c.height);
-  let py = c.height / 2;
-  const draw = () => {
-    for (let k = 0; k < 3; k++) {
-      t += 0.05;
-      let y;
-      if (mode === 'aed-noshock') y = c.height / 2 + Math.sin(t * 0.7) * 2 + (Math.random() - 0.5) * 2; // 무수축에 가까운 선
-      else y = c.height / 2 + Math.sin(t * 3.1) * 22 + Math.sin(t * 5.3 + 1) * 14 + Math.sin(t * 1.7) * 10; // 심실세동(VF)
-      g.fillStyle = '#071a10'; g.fillRect(x, 0, 10, c.height);
-      g.strokeStyle = '#5ff58a'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(x - 2, py); g.lineTo(x, y); g.stroke();
-      py = y; x += 2; if (x > c.width) { x = 0; }
-    }
-    ecgRAF = requestAnimationFrame(draw);
-  };
-  draw();
-  if (settings.tts && mode !== 'aed-analyze') speak(say.replace('🔊 ', ''));
-}
-function stopECG() { cancelAnimationFrame(ecgRAF); ecgRAF = null; }
-
-/* 메트로놈 (110회/분) */
-let metroTimer = null, actx = null;
-function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }
-function startMetronome() {
-  stopMetronome(); $('metro').classList.remove('hidden');
-  metroTimer = setInterval(() => {
-    $('metroDot').classList.add('on'); setTimeout(() => $('metroDot').classList.remove('on'), 120);
-    if (actx) {
-      const o = actx.createOscillator(), gn = actx.createGain();
-      o.frequency.value = 1000; gn.gain.value = 0.05; o.connect(gn); gn.connect(actx.destination);
-      o.start(); o.stop(actx.currentTime + 0.03);
-    }
-  }, 60000 / 110);
-}
-function stopMetronome() { clearInterval(metroTimer); metroTimer = null; $('metro').classList.add('hidden'); }
-
-/* ───────── 결정 지점 ───────── */
-function decide(id, n) {
-  return new Promise((resolve) => {
-    $('stage').classList.add('dim');
-    $('hud').textContent = '결정의 순간';
-    setOverlays(Object.assign({}, n, { vitals: null, banner: null, metronome: false }));
-    if (!n.keepVitals) $('vitals').classList.add('hidden');
-    const box = $('decision'); box.classList.remove('hidden');
-    const t0 = Date.now();
-    let timer = null, closed = false;
-    const done = (entry, next) => {
-      if (closed) return; closed = true; clearInterval(timer);
-      entry.ms = Date.now() - t0; entry.dp = n.dp; entry.prompt = n.prompt; entry.max = n.points;
-      entry.cprDelayBefore = S.cprDelay;
-      applyEffects(n.dp, entry.effects);
-      S.log[n.dp] = entry;
-      record('logChoice', {
-        attemptId: S.attemptId, dp: n.dp, choice: entry.choiceKeys, correct: entry.verdict === 'correct',
-        responseMs: entry.ms, critical: entry.verdict === 'critical', cprDelayAt: S.cprDelay
+/* ── 퀴즈 공통 ── */
+function renderQuiz({ title, desc, questions, quizType, again }) {
+  if (!questions.length) { M().innerHTML = `<h1>${esc(title)}</h1><div class="card"><p>풀 문제가 없습니다.</p></div>`; return; }
+  const answers = {};
+  M().innerHTML = `<h1>${esc(title)}</h1><p class="sub">${esc(desc || '')}</p><div class="stack" style="margin-top:14px">` +
+    questions.map((q, i) => `<div class="q" data-q="${esc(q.qid)}"><div class="no">${i + 1} / ${questions.length} · ${esc(q.subject)} · ${esc(q.unit)}</div>
+      <div class="stem">${esc(q.question)}</div>
+      ${q.options.map((o, k) => `<label data-k="${k + 1}"><input type="radio" name="q${i}" value="${k + 1}"><span>${'①②③④⑤'[k]} ${esc(o)}</span></label>`).join('')}
+      <div class="res"></div></div>`).join('') +
+    `</div><div class="sticky-bar"><span class="sub" id="cnt">0 / ${questions.length} 답함</span><button class="btn primary" id="sub" disabled>제출하고 채점</button></div>`;
+  M().querySelectorAll('.q').forEach((box) => box.querySelectorAll('input').forEach((r) => r.onchange = () => {
+    answers[box.dataset.q] = Number(r.value);
+    const n = Object.keys(answers).length; $('cnt').textContent = `${n} / ${questions.length} 답함`; $('sub').disabled = n < questions.length;
+  }));
+  $('sub').onclick = async () => {
+    $('sub').disabled = true; $('sub').textContent = '채점 중…';
+    try {
+      const r = await api('submitQuiz', { quizType, answers });
+      progressCache = null;
+      r.detail.forEach((d) => {
+        const box = M().querySelector(`.q[data-q="${CSS.escape(d.qid)}"]`); if (!box) return;
+        box.querySelectorAll('input').forEach((x) => x.disabled = true);
+        box.querySelector(`label[data-k="${d.answer}"]`).classList.add('right');
+        if (!d.correct) box.querySelector(`label[data-k="${d.chosen}"]`).classList.add('wrong');
+        box.querySelector('.res').innerHTML = `<div class="exp"><span class="mark ${d.correct ? 'ok' : 'no'}">${d.correct ? '✓ 정답' : '✗ 오답'}</span> · 정답 ${'①②③④⑤'[d.answer - 1]}<br>${esc(d.explanation)}</div>`;
       });
-      box.innerHTML = '<p class="sub">선택이 기록되었습니다…</p>';
-      setTimeout(() => { box.classList.add('hidden'); resolve(typeof n.route === 'function' ? n.route(S) : next); }, 500);
-    };
-    // 제한 시간
-    let timerHtml = '';
-    if (n.timeLimit) timerHtml = `<div class="timer"><i id="tbar"></i></div><div class="timer-label" id="tlab"></div>`;
-    const head = `<p class="q">${esc(n.prompt)}</p>${timerHtml}`;
-    const R = { single: uiSingle, multi: uiMulti, triage: uiTriage, pads: uiPads, sbar: uiSbar }[n.ui];
-    R(box, n, head, done);
-    if (n.timeLimit) {
-      const lim = n.timeLimit * 1000;
-      timer = setInterval(() => {
-        const left = Math.max(0, lim - (Date.now() - t0));
-        const bar = $('tbar'); if (bar) bar.style.width = (left / lim * 100) + '%';
-        const lab = $('tlab'); if (lab) lab.textContent = `남은 시간 ${Math.ceil(left / 1000)}초`;
-        if (left <= 0) {
-          if (n.timeoutKey === 'TIMEOUT') {
-            const t = n.timeout;
-            done({ choiceKeys: 'TIMEOUT', choiceText: '⏱ 시간 초과 (결정하지 못함)', verdict: t.verdict, points: t.points, fb: t.fb, effects: t.effects }, t.next);
-          } else {
-            const o = n.options.find((x) => x.key === n.timeoutKey);
-            done(optEntry(o, ' (⏱ 시간 초과)'), o.next);
-          }
-        }
-      }, 100);
-    }
-    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  });
-}
-function optEntry(o, suffix = '') {
-  const pts = o.verdict === 'correct' ? null : (o.points != null ? o.points : 0);
-  return { choiceKeys: o.key, choiceText: `${o.key}. ${o.text}${suffix}`, verdict: o.verdict, points: pts, fb: o.fb, effects: o.effects };
-}
-
-function uiSingle(box, n, head, done) {
-  box.innerHTML = head + '<div class="opts">' + n.options.map((o) =>
-    `<button class="opt" data-k="${esc(o.key)}"><span class="k">${esc(o.key)}</span><span>${esc(o.text)}</span></button>`).join('') + '</div>';
-  box.querySelectorAll('.opt').forEach((b) => b.onclick = () => {
-    const o = n.options.find((x) => x.key === b.dataset.k);
-    const e = optEntry(o); if (e.points == null) e.points = n.points;
-    done(e, o.next);
-  });
-}
-
-function uiMulti(box, n, head, done) {
-  box.innerHTML = head + '<div class="opts">' + n.options.map((o) =>
-    `<label class="opt"><input type="checkbox" value="${esc(o.key)}"><span>${esc(o.text)}</span></label>`).join('') +
-    '</div><div class="actions"><button class="btn primary" id="mOk">확인</button></div>';
-  box.querySelectorAll('.opt input').forEach((c) => c.onchange = () => c.closest('.opt').classList.toggle('sel', c.checked));
-  $('mOk').onclick = () => {
-    const sel = [...box.querySelectorAll('input:checked')].map((c) => c.value);
-    const right = n.options.filter((o) => o.verdict === 'correct').map((o) => o.key);
-    let hit = 0; n.options.forEach((o) => { if ((o.verdict === 'correct') === sel.includes(o.key)) hit++; });
-    const exact = hit === n.options.length;
-    done({ choiceKeys: sel, choiceText: sel.length ? sel.map((k) => n.options.find((o) => o.key === k).text).join(' / ') : '(선택 없음)',
-           verdict: exact ? 'correct' : hit >= n.options.length - 2 ? 'partial' : 'wrong',
-           points: Math.round(n.points * hit / n.options.length * 10) / 10,
-           fb: `정답: ${right.map((k) => n.options.find((o) => o.key === k).text).join(' / ')}. ${n.fb || ''}` }, n.next);
+      const bar = M().querySelector('.sticky-bar');
+      bar.innerHTML = `<span><span class="score">${r.correctCount}</span><span class="sub"> / ${r.total} 정답</span></span>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ag">${again || '다시 풀기'}</button>${r.correctCount < r.total ? '<a class="btn" href="#wrong" style="text-decoration:none">오답노트</a>' : ''}</span>`;
+      $('ag').onclick = () => route(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast(`${r.total}문항 중 ${r.correctCount}문항 정답`);
+    } catch (e) { toast(e.message); $('sub').disabled = false; $('sub').textContent = '제출하고 채점'; }
   };
 }
 
-function uiTriage(box, n, head, done) {
-  const pts = n.patients.filter((p) => !p.onlyIf || S.flags[p.onlyIf]);
-  const names = { green: '녹색', yellow: '황색', red: '적색', black: '흑색' };
-  const pick = {};
-  box.innerHTML = head + '<div class="tri">' + pts.map((p) =>
-    `<div class="p"><div><span class="who2">환자 ${esc(p.key)}</span>${esc(p.info)}</div>
-      <div class="tags" data-p="${esc(p.key)}">${Object.keys(names).map((c) => `<button class="${c}" data-c="${c}">${names[c]}</button>`).join('')}</div></div>`).join('') +
-    '</div><div class="actions"><button class="btn primary" id="tOk" disabled>분류 완료</button></div>';
-  box.querySelectorAll('.tags').forEach((g) => g.querySelectorAll('button').forEach((b) => b.onclick = () => {
-    pick[g.dataset.p] = b.dataset.c;
-    g.querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b));
-    $('tOk').disabled = Object.keys(pick).length < pts.length;
-  }));
-  $('tOk').onclick = () => {
-    S.triage = Object.assign({}, pick);
-    const ok = pts.filter((p) => pick[p.key] === p.answer);
-    done({ choiceKeys: ok.map((p) => p.key),
-           choiceText: pts.map((p) => `${p.key}:${names[pick[p.key]]}${pick[p.key] === p.answer ? '' : `(정답 ${names[p.answer]})`}`).join(' · '),
-           verdict: ok.length === pts.length ? 'correct' : ok.length >= pts.length / 2 ? 'partial' : 'wrong',
-           points: Math.round(n.points * ok.length / pts.length * 10) / 10, fb: n.fb }, n.next);
+async function viewPretest() {
+  if (!loggedIn()) return needLogin();
+  loading();
+  const r = await api('getQuiz', { n: 5, source: 'V8' });
+  renderQuiz({ title: '사전학습 퀴즈', desc: '시뮬레이션 전 기본 지식 확인 · 15문항 중 무작위 5문항 · 다시 풀면 다른 문항이 나올 수 있습니다', questions: r.questions, quizType: 'pretest' });
+}
+
+async function viewBank() {
+  if (!loggedIn()) return needLogin();
+  loading();
+  const meta = (await api('getBankMeta')).subjects;
+  const subs = Object.keys(meta);
+  M().innerHTML = `<h1>문제은행</h1><p class="sub">검수가 끝난 문항만 출제됩니다. 문항은 계속 추가됩니다.</p>
+    <div class="card" style="margin-top:14px;max-width:560px">
+      <label class="f">과목</label><select id="bs">${subs.map((s) => `<option value="${esc(s)}">${esc(s)} (${meta[s].total})</option>`).join('')}</select>
+      <label class="f">단원</label><select id="bu"></select>
+      <label class="f">문항 수</label><select id="bn"><option>5</option><option selected>10</option><option>20</option></select>
+      <div class="actions"><button class="btn primary" id="go">풀기 시작</button></div></div>`;
+  const fillUnits = () => { const u = meta[$('bs').value].units;
+    $('bu').innerHTML = `<option value="">전체 단원 (${meta[$('bs').value].total})</option>` + Object.keys(u).map((k) => `<option value="${esc(k)}">${esc(k)} (${u[k]})</option>`).join(''); };
+  if (subs.length) fillUnits(); $('bs').onchange = fillUnits;
+  $('go').onclick = async () => {
+    const subject = $('bs').value, unit = $('bu').value, n = Number($('bn').value); // 화면을 바꾸기 전에 값을 읽음
+    loading();
+    const r = await api('getQuiz', { n, subject, unit });
+    renderQuiz({ title: `문제은행 · ${subject}${unit ? ' · ' + unit : ''}`, desc: `${r.questions.length}문항`, questions: r.questions, quizType: 'practice', again: '새 문제 풀기' });
   };
 }
 
-function uiPads(box, n, head, done) {
-  // 화면 기준 좌표 (환자의 오른쪽 = 화면 왼쪽)
-  // R: 오른쪽 쇄골 바로 아래 / L: 왼쪽 젖꼭지(y=150)보다 아래, 중간겨드랑선(몸통 가장자리 쪽)
-  const zones = { R: { x: 112, y: 92, r: 34 }, L: { x: 242, y: 200, r: 34 } };
-  const pads = [];
-  box.innerHTML = head + `<div class="pads"><svg id="torso" viewBox="0 0 320 360" role="img" aria-label="환자 가슴 그림">
-      <path d="M60 40 Q160 8 260 40 L276 150 Q282 250 250 345 L70 345 Q38 250 44 150 Z" fill="#c9a58a" stroke="#8a6a55" stroke-width="2"/>
-      <path d="M95 66 Q130 78 156 70 M164 70 Q190 78 225 66" stroke="#8a6a55" stroke-width="3" fill="none"/>
-      <line x1="160" y1="70" x2="160" y2="215" stroke="#a8836b" stroke-width="3"/>
-      <circle cx="122" cy="150" r="5" fill="#9b6b58"/><circle cx="198" cy="150" r="5" fill="#9b6b58"/>
-      <text x="40" y="26" fill="#a3a9b5" font-size="12">환자의 오른쪽</text>
-      <text x="200" y="26" fill="#a3a9b5" font-size="12">환자의 왼쪽</text>
-      <g id="padLayer"></g></svg>
-    <div><p>환자는 바닥에 누워 있고, 당신은 환자를 내려다보고 있습니다.</p>
-      <p class="sub">그림을 눌러 패드를 붙이세요. 두 장을 붙인 뒤 다시 누르면 먼저 붙인 패드부터 옮겨집니다.</p>
-      <div class="actions" style="justify-content:flex-start">
-        <button class="btn" id="pReset">다시 붙이기</button><button class="btn primary" id="pOk" disabled>부착 완료</button></div></div></div>`;
-  const svg = $('torso');
-  const redraw = () => {
-    $('padLayer').innerHTML = pads.map((p, i) =>
-      `<rect x="${p.x - 26}" y="${p.y - 18}" width="52" height="36" rx="8" fill="#f4f6f8" stroke="#f1771f" stroke-width="3"/>
-       <text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="#f1771f">${i + 1}</text>`).join('');
-    $('pOk').disabled = pads.length < 2;
-  };
-  let nextIdx = 0;
-  svg.onclick = (e) => {
-    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
-    if (pads.length < 2) pads.push({ x: p.x, y: p.y }); else { pads[nextIdx] = { x: p.x, y: p.y }; nextIdx = 1 - nextIdx; }
-    redraw();
-  };
-  $('pReset').onclick = () => { pads.length = 0; nextIdx = 0; redraw(); };
-  $('pOk').onclick = () => {
-    const inZ = (z) => pads.some((p) => Math.hypot(p.x - z.x, p.y - z.y) <= z.r);
-    const ok = ['R', 'L'].filter((k) => inZ(zones[k]));
-    done({ choiceKeys: ok, choiceText: ok.length === 2 ? '두 패드 모두 올바른 위치' : ok.length === 1 ? '한 장만 올바른 위치' : '두 장 모두 잘못된 위치',
-           verdict: ok.length === 2 ? 'correct' : ok.length === 1 ? 'partial' : 'wrong',
-           points: n.points * ok.length / 2, fb: n.fb, effects: ok.length === 2 ? null : n.wrongEffects }, n.next);
-  };
+async function viewWrong() {
+  if (!loggedIn()) return needLogin();
+  loading();
+  const r = await api('getWrongQuiz', { n: 20 });
+  if (!r.total) { M().innerHTML = `<h1>오답노트</h1><div class="card"><h2>🎉 남은 오답이 없습니다</h2><p class="sub">문제은행이나 사전학습 퀴즈에서 틀린 문제가 여기에 모입니다.</p></div>`; return; }
+  renderQuiz({ title: '오답노트', desc: `남은 오답 ${r.total}개 · 다시 맞히면 오답노트에서 빠집니다`, questions: r.questions, quizType: 'review', again: '남은 오답 다시 풀기' });
 }
 
-function uiSbar(box, n, head, done) {
-  const slots = ['S', 'B', 'A', 'R'], fill = { S: null, B: null, A: null, R: null };
-  const cards = n.cards.slice().sort(() => Math.random() - 0.5);
-  const render = () => {
-    const used = Object.values(fill).filter(Boolean);
-    box.innerHTML = head + '<div class="sbar-slots">' + slots.map((s) => {
-      const c = fill[s] && n.cards.find((x) => x.key === fill[s]);
-      return `<button class="slot${c ? ' filled' : ''}" data-s="${s}"><b>${s}</b>${c ? esc(c.text) : '<span class="sub">카드를 고르세요</span>'}</button>`;
-    }).join('') + '</div><div class="cards">' + cards.map((c) =>
-      `<button data-c="${esc(c.key)}" ${used.includes(c.key) ? 'disabled' : ''}>${esc(c.text)}</button>`).join('') +
-      `</div><div class="actions"><button class="btn primary" id="sOk" ${used.length < 4 ? 'disabled' : ''}>인계 완료</button></div>`;
-    box.querySelectorAll('.slot').forEach((b) => b.onclick = () => { fill[b.dataset.s] = null; render(); });
-    box.querySelectorAll('.cards button').forEach((b) => b.onclick = () => {
-      const s = slots.find((x) => !fill[x]); if (s) { fill[s] = b.dataset.c; render(); }
-    });
-    const ok = $('sOk'); if (ok) ok.onclick = () => {
-      const right = slots.filter((s) => fill[s] === s);
-      done({ choiceKeys: right, choiceText: slots.map((s) => `${s}: ${(n.cards.find((c) => c.key === fill[s]) || {}).text || ''}`).join('\n'),
-             verdict: right.length === 4 ? 'correct' : right.length >= 2 ? 'partial' : 'wrong',
-             points: Math.round(n.points * right.length / 4 * 10) / 10, fb: n.fb }, null);
-    };
-  };
-  render();
+/* ── 핵심술기 ── */
+async function viewSkills() {
+  let p = null; try { p = await getProgress(); } catch (e) {}
+  M().innerHTML = `<h1>핵심술기</h1><p class="sub">시뮬레이션에 나오는 술기를 단계별로 익히고, 실습 후 셀프 체크하세요. <span class="badge star">★ 필수</span> 항목은 평가에서 반드시 수행해야 합니다.</p>
+    <div class="grid" style="margin-top:14px">${SKILLS.map((s) => {
+      const c = p && p.skills[s.id];
+      return `<a class="tile" href="#skill/${s.id}"><h3>${esc(s.title)}</h3><div class="sub">${esc(s.subtitle)}</div>
+        <div class="chips" style="margin-top:8px"><span>난이도 ${esc(s.level)}</span><span>${esc(s.time)}</span><span>${s.steps.length}단계 · 필수 ${s.steps.filter((x) => x.star).length}</span></div>
+        ${c ? `<div class="st">최근 셀프 체크 ${c.checked}/${c.total} · ${fmtDate(c.at)}</div><div class="prog"><i style="width:${c.checked / c.total * 100}%"></i></div>` : ''}</a>`;
+    }).join('')}</div>`;
 }
 
-/* ───────── 결과 ───────── */
-async function finish() {
-  stopMetronome(); stopECG(); speechSynthesis.cancel();
-  const ending = S.ending || 'END-A';
-  const E = SC.endings[ending];
-  let score = 0, crit = 0;
-  DP_ORDER.forEach((k) => { const l = S.log[k]; if (l) { score += l.points || 0; if (l.verdict === 'critical') crit++; } });
-  score = Math.round(score);
-  await record('finishAttempt', { attemptId: S.attemptId, totalScore: score, criticalErrors: crit, ending,
-    cprDelay: S.cprDelay, flags: Object.keys(S.flags) });
-  for (const [a, b] of pending.splice(0)) await record(a, b); // 실패한 기록 재전송
-
-  const titleOf = (k) => (N[k] && N[k].prompt) || k;
-  const rows = DP_ORDER.map((k) => {
-    const l = S.log[k];
-    if (!l) return `<tr><td>${esc(k)}</td><td>${esc(titleOf(k))}</td><td class="sub">—</td><td><span class="vt none">미도달</span></td><td class="n">0 / ${N[k].points}</td></tr>`;
-    return `<tr><td>${esc(k)}</td><td>${esc(l.prompt)}<div class="fb">💡 ${esc(l.fb || '')}</div></td>
-      <td style="white-space:pre-line">${esc(l.choiceText)}<div class="fb">응답 ${(l.ms / 1000).toFixed(1)}초</div></td>
-      <td><span class="vt ${l.verdict}">${VERDICT_LABEL[l.verdict]}</span></td><td class="n">${l.points} / ${l.max}</td></tr>`;
-  }).join('');
-  const delays = S.delays.length
-    ? '<ul class="delays">' + S.delays.map((d) => `<li>${esc(d.dp)} · ${esc(d.kind)} <b>+${d.sec}초</b></li>`).join('') + '</ul>'
-    : '<p class="sub">지연 없이 진행했습니다.</p>';
-  const reachedSbar = !!S.log.DP9;
-  const flagsTxt = { lateEMS: '119 신고 지연', extraRed: '공황으로 부상자 추가', hypoglycemia: '인슐린 오투여 → 저혈당', ntgFail: 'NTG 효과 없음' };
-  const flagList = Object.keys(S.flags).map((f) => flagsTxt[f] || f);
-
-  $('resultBody').innerHTML = `
-    <div class="ending ${E.verdict}"><div class="code">${esc(ending)}</div><div class="lab">${esc(E.label)}</div><div>${esc(E.msg)}</div></div>
-    <div class="kpis">
-      <div class="kpi"><div class="k">점수</div><div class="v">${score}<span class="sub"> / 100</span></div></div>
-      <div class="kpi"><div class="k">가슴압박 지연 누적</div><div class="v">${S.cprDelay}<span class="sub">초</span></div></div>
-      <div class="kpi"><div class="k">치명 오류</div><div class="v">${crit}<span class="sub">건</span></div></div>
-      <div class="kpi"><div class="k">소요 시간</div><div class="v">${Math.round((Date.now() - S.startedAt) / 60000)}<span class="sub">분</span></div></div>
+function viewSkill(id) {
+  const s = SKILLS.find((x) => x.id === id); if (!s) return viewSkills();
+  const key = 'skill-' + id;
+  const saved = JSON.parse(localStorage.getItem(key) || '[]');
+  M().innerHTML = `<a href="#skills" class="sub" style="text-decoration:none">← 핵심술기</a>
+    <h1 style="margin-top:6px">${esc(s.title)}</h1><p class="sub">${esc(s.subtitle)} · 난이도 ${esc(s.level)} · 수행시간 ${esc(s.time)}</p>
+    <div class="card" style="margin-top:12px"><h3>🔗 시뮬레이션 연결</h3><div class="sub">${esc(s.scenario)}</div></div>
+    ${s.video ? `<video src="${esc(s.video)}" controls style="width:100%;border-radius:14px;margin-top:12px;background:#000"></video>` : ''}
+    <div class="grid" style="margin-top:12px">
+      <div class="card"><h3>성취목표</h3><ul>${s.goals.map((g) => `<li>${esc(g)}</li>`).join('')}</ul></div>
+      <div class="card"><h3>관련 선행지식</h3><ul>${s.prior.map((g) => `<li>${esc(g)}</li>`).join('')}</ul></div>
+      <div class="card"><h3>필요장비 및 물품</h3><ul>${s.supplies.map((g) => `<li>${esc(g)}</li>`).join('')}</ul></div>
     </div>
-    ${flagList.length ? `<div class="card sec"><h2>내 선택이 바꾼 상황</h2><ul>${flagList.map((f) => `<li>${esc(f)}</li>`).join('')}</ul></div>` : ''}
-    <div class="card sec"><h2>시간을 잃은 곳</h2>${delays}</div>
-    <div class="card sec" style="overflow-x:auto"><h2>결정 지점별 결과</h2>
-      <table><thead><tr><th>DP</th><th>질문 · 해설</th><th>내 선택</th><th>판정</th><th class="n">점수</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="card sec"><h2>교육 메시지</h2><ul class="closing">${SC.closing.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></div>
-    <div class="card sec"><h2>성찰</h2>
-      ${reachedSbar ? '' : `<label class="f">SBAR 단계에 도달하지 못했습니다. 이 환자를 구조대에 인계한다고 생각하고 SBAR를 직접 작성해 보세요.</label>
-        <textarea id="rfSbar" placeholder="S: &#10;B: &#10;A: &#10;R: "></textarea>`}
-      <label class="f">오늘 시뮬레이션에서 실제 현장에서도 꼭 기억할 한 가지는 무엇인가요? 그 순간 어떤 생각이 들었나요?</label>
-      <textarea id="rfText"></textarea>
-      <div class="actions">
-        <button class="btn primary" id="btnRf">${session.guest ? '체험 모드는 저장되지 않습니다' : '성찰 저장'}</button>
-      </div></div>
-    <div class="card sec"><h2>파일럿 설문 (1분)</h2>
-      <p class="sub">프로그램 개선에 쓰입니다. 1 = 전혀 아니다 · 5 = 매우 그렇다</p>
-      ${[['immersion', '실제 현장에 있는 것처럼 몰입되었다'], ['difficulty', '선택이 쉽지 않았고 고민하게 만들었다'],
-         ['placeholderDisturb', '영상 대신 나온 임시 컷이 몰입을 방해했다']].map(([k, q]) =>
-        `<div class="lik"><div>${esc(q)}</div><div class="scale" data-k="${k}">${[1, 2, 3, 4, 5].map((v) => `<button data-v="${v}" aria-label="${v}점">${v}</button>`).join('')}</div></div>`).join('')}
-      <label class="f">가장 먼저 실제 영상으로 보고 싶은 장면이나 바라는 점 (선택)</label>
-      <textarea id="svCmt" style="min-height:70px"></textarea>
-      <div class="actions"><button class="btn primary" id="btnSv" disabled>${session.guest ? '체험 모드는 저장되지 않습니다' : '설문 제출'}</button></div></div>
-    <div class="actions"><button class="btn" id="btnAgain">처음부터 다시 하기</button><button class="btn ghost" id="btnOut">로그아웃</button></div>
-    <p class="sub">※ 성적과 반 통계에는 첫 번째 플레이 기록을 기준으로 합니다.</p>`;
-  $('btnRf').disabled = session.guest;
-  $('btnRf').onclick = async () => {
-    const tasks = [];
-    if (!reachedSbar && $('rfSbar').value.trim()) tasks.push(record('saveReflection', { attemptId: S.attemptId, type: 'sbar', text: $('rfSbar').value }));
-    if ($('rfText').value.trim()) tasks.push(record('saveReflection', { attemptId: S.attemptId, type: 'reflection', text: $('rfText').value }));
-    if (!tasks.length) return toast('내용을 입력해 주세요.');
-    await Promise.all(tasks); toast('저장했습니다.'); $('btnRf').disabled = true;
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">수행 단계 · 셀프 체크</h2>
+        <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="onlyStar"> 필수(★) 항목만 보기</label></div>
+      <p class="sub">실습하면서 수행한 단계를 체크하세요. 체크 상태는 이 기기에 임시 저장되고, "셀프 체크 저장"을 누르면 내 기록에 남습니다.</p>
+      <ol class="steps">${s.steps.map((st, i) => `<li class="${st.star ? 'star' : ''}${saved.includes(i) ? ' done' : ''}" data-i="${i}">
+        <span class="n">${i + 1}</span><div><label><input type="checkbox" ${saved.includes(i) ? 'checked' : ''}><span class="txt">${st.star ? '<span class="badge star">★ 필수</span> ' : ''}${esc(st.t)}</span></label>
+        ${st.note ? `<div class="note">※ ${esc(st.note)}</div>` : ''}</div></li>`).join('')}</ol>
+      <div class="sticky-bar"><span class="sub" id="sk">0 / ${s.steps.length}</span>
+        <span style="display:flex;gap:8px"><button class="btn" id="clr">초기화</button><button class="btn primary" id="sv">셀프 체크 저장</button></span></div>
+    </div>`;
+  const update = () => {
+    const on = [...M().querySelectorAll('.steps li')].filter((li) => li.querySelector('input').checked).map((li) => Number(li.dataset.i));
+    M().querySelectorAll('.steps li').forEach((li) => li.classList.toggle('done', on.includes(Number(li.dataset.i))));
+    localStorage.setItem(key, JSON.stringify(on));
+    const missed = s.steps.map((x, i) => x.star && !on.includes(i) ? i + 1 : null).filter(Boolean);
+    $('sk').innerHTML = `${on.length} / ${s.steps.length} 수행${missed.length ? ` · <span style="color:var(--warn)">빠진 필수 ${missed.join(', ')}번</span>` : ' · 필수 항목 모두 수행'}`;
+    return { on, missed };
   };
-  const sv = {};
-  document.querySelectorAll('.lik .scale').forEach((g) => g.querySelectorAll('button').forEach((b) => b.onclick = () => {
-    sv[g.dataset.k] = Number(b.dataset.v);
-    g.querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b));
-    $('btnSv').disabled = session.guest || Object.keys(sv).length < 3;
-  }));
-  $('btnSv').onclick = async () => {
-    $('btnSv').disabled = true;
-    await record('saveSurvey', Object.assign({ attemptId: S.attemptId, comment: $('svCmt').value }, sv));
-    toast('설문을 제출했습니다. 감사합니다!'); $('btnSv').textContent = '제출 완료';
+  M().querySelectorAll('.steps input').forEach((c) => c.onchange = update);
+  $('onlyStar').onchange = (e) => M().querySelectorAll('.steps li').forEach((li) => li.classList.toggle('hidden', e.target.checked && !li.classList.contains('star')));
+  $('clr').onclick = () => { M().querySelectorAll('.steps input').forEach((c) => c.checked = false); update(); };
+  $('sv').onclick = async () => {
+    if (!loggedIn()) return toast('로그인하면 기록에 저장됩니다.');
+    const { on, missed } = update();
+    $('sv').disabled = true;
+    try { await api('saveSkillCheck', { skill: s.id, checked: on.length, total: s.steps.length, missedCritical: missed }); progressCache = null; toast('셀프 체크를 저장했습니다.'); }
+    catch (e) { toast(e.message); } finally { $('sv').disabled = false; }
   };
-  $('btnAgain').onclick = () => show('scrBrief');
-  $('btnOut').onclick = () => { sessionStorage.removeItem('simSession'); location.reload(); };
-  show('scrResult');
+  update();
 }
 
-/* 이미 로그인된 세션이면 브리핑으로 */
-if (session.token || session.guest) toBrief();
+/* ── 내 기록 ── */
+async function viewMe() {
+  if (!loggedIn()) return needLogin();
+  loading();
+  const p = await getProgress(true);
+  const qt = { pretest: '사전학습 퀴즈', practice: '문제은행', review: '오답노트' };
+  const endLabel = { 'END-A': '최선의 소생', 'END-B': '지연된 소생', 'END-C': '소생 실패', 'END-D': '구조자 부상', 'END-E': '2차 사고' };
+  M().innerHTML = `<h1>내 기록</h1><p class="sub">${esc(session.user.name)} · ${esc(session.user.studentNo)} · ${esc(session.user.classCode)}</p>
+    <div class="grid" style="margin-top:14px">
+      <div class="card"><h3>문제 풀이</h3><div class="score">${p.bank.correctNow}<span class="sub"> / ${p.bank.solved} 정답</span></div><div class="sub">남은 오답 ${p.bank.wrongNow}개</div></div>
+      <div class="card"><h3>시뮬레이션</h3><div class="score">${p.sims.length}<span class="sub"> 회</span></div><div class="sub">${p.sims.length ? '첫 플레이: ' + esc(p.sims[p.sims.length - 1].ending) + ' · ' + p.sims[p.sims.length - 1].score + '점' : '아직 없음'}</div></div>
+      <div class="card"><h3>핵심술기</h3><div class="score">${Object.keys(p.skills).length}<span class="sub"> / ${SKILLS.length} 체크</span></div></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h2>퀴즈</h2>${Object.keys(p.quiz).length ? `<table><tr><th>종류</th><th class="n">응시</th><th class="n">누적 정답률</th><th class="n">최근</th></tr>${Object.entries(p.quiz).map(([k, v]) =>
+      `<tr><td>${esc(qt[k] || k)}</td><td class="n">${v.count}</td><td class="n">${v.total ? Math.round(v.correct / v.total * 100) : 0}%</td><td class="n">${v.last.correct}/${v.last.total}</td></tr>`).join('')}</table>` : '<p class="sub">아직 없음</p>'}</div>
+    <div class="card" style="margin-top:12px"><h2>시뮬레이션</h2>${p.sims.length ? `<table><tr><th>일시</th><th>결말</th><th class="n">점수</th><th class="n">압박 지연</th></tr>${p.sims.map((s) =>
+      `<tr><td>${fmtDate(s.at)}${s.first ? ' <span class="badge">첫 플레이 · 성적 기준</span>' : ''}</td><td class="end-${String(s.ending).slice(-1)}">${esc(s.ending)} ${esc(endLabel[s.ending] || '')}</td><td class="n">${s.score}</td><td class="n">${s.cprDelay}초</td></tr>`).join('')}</table>` : '<p class="sub">아직 없음 · <a href="sim.html">시뮬레이션 하러 가기</a></p>'}</div>
+    <div class="card" style="margin-top:12px"><h2>핵심술기 셀프 체크</h2><table><tr><th>술기</th><th class="n">수행</th><th>빠진 필수 단계</th><th class="n">일시</th></tr>${SKILLS.map((s) => {
+      const c = p.skills[s.id];
+      return `<tr><td><a href="#skill/${s.id}">${esc(s.title)}</a></td><td class="n">${c ? c.checked + '/' + c.total : '–'}</td><td>${c ? (c.missedCritical ? esc(c.missedCritical) + '번' : '없음') : ''}</td><td class="n">${c ? fmtDate(c.at) : ''}</td></tr>`; }).join('')}</table></div>`;
+}
+
+/* ── 라우터 ── */
+async function route() {
+  if (!session.token && !session.guest) return viewLogin();
+  $('hdr').classList.remove('hidden');
+  $('who').innerHTML = `${esc(session.user.name)}${session.user.classCode ? ' · ' + esc(session.user.classCode) : ''}<button onclick="logout()">${session.guest ? '로그인' : '로그아웃'}</button>`;
+  const h = location.hash || '#home';
+  document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('on', h.startsWith(a.getAttribute('href')) && a.getAttribute('href') !== 'sim.html'));
+  window.scrollTo(0, 0);
+  try {
+    if (h.startsWith('#skill/')) return viewSkill(h.slice(7));
+    ({ '#home': viewHome, '#pretest': viewPretest, '#bank': viewBank, '#wrong': viewWrong, '#skills': viewSkills, '#me': viewMe }[h] || viewHome)();
+  } catch (e) { M().innerHTML = `<div class="card"><p class="msg err">${esc(e.message)}</p></div>`; }
+}
+window.addEventListener('hashchange', () => route());
+window.addEventListener('unhandledrejection', (e) => { M().innerHTML = `<div class="card"><p class="msg err">${esc(e.reason && e.reason.message || e.reason)}</p><p class="sub">잠시 후 다시 시도해 주세요.</p></div>`; });
+route();
 </script>
 </body>
 </html>
