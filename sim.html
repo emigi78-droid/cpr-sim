@@ -71,7 +71,8 @@
   .subs span { background: rgba(0,0,0,.72); color: #fff; padding: 4px 12px; border-radius: 6px; line-height: 1.8;
                font-size: clamp(14px, 2vw, 21px); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
   .subs em { font-style: normal; color: #9fd0ff; margin-right: 6px; }
-  .skip { position: absolute; right: 12px; bottom: 10px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.3);
+  /* 건너뛰기는 오른쪽 위: 오른쪽 아래는 영상의 "AI" 생성 표시 자리라 가리지 않음 */
+  .skip { position: absolute; right: 12px; top: 10px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.3);
           color: #fff; border-radius: 8px; padding: 4px 10px; font-size: 13px; }
   .metro { position: absolute; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13px;
            background: rgba(0,0,0,.5); padding: 4px 10px; border-radius: 999px; }
