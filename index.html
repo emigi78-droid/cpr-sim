@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>재난·응급 분기형 시뮬레이션 V9</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9D%A4%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0f1115; --panel: #181b22; --panel-2: #20242d; --line: #2c313c;
+    --ink: #eef0f3; --ink-2: #a3a9b5; --accent: #4c9bff;
+    --good: #0aac23; --warning: #fbb315; --critical: #dc3c3d; --neutral: #7d8390;
+    --green: #22a447; --yellow: #f2c200; --red: #e03b3b; --black: #111;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 20px; margin: 0 0 12px; }
+  .sub { color: var(--ink-2); font-size: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; }
+  .btn:hover { border-color: var(--ink-2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .btn.primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.ghost { background: transparent; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  label.f { display: block; font-size: 14px; color: var(--ink-2); margin: 10px 0 4px; }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
+  textarea { min-height: 110px; resize: vertical; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tabs button { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--line); background: transparent; }
+  .tabs button[aria-selected=true] { background: var(--panel-2); border-color: var(--ink-2); font-weight: 600; }
+  .msg { min-height: 22px; font-size: 14px; margin-top: 10px; }
+  .msg.err { color: #ff8a8a; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* ── 무대 ── */
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .who { font-size: 14px; color: var(--ink-2); }
+  .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 14px; overflow: hidden;
+           border: 1px solid var(--line); }
+  .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+  .stage.dim video, .stage.dim .ph { filter: brightness(.35) blur(1px); transition: filter .4s; }
+  /* 결정 순간에는 영상 영역을 줄여 질문이 한 화면에 보이게 */
+  .stage.dim { aspect-ratio: auto; height: min(30vh, 56.25vw); }
+  .stage.dim .ph .d { display: none; }
+  .ph { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; padding: 8% 10%; background: radial-gradient(ellipse at center, #232a36 0%, #0b0d11 75%); }
+  .ph.wrong { background: radial-gradient(ellipse at center, #3a1f22 0%, #0b0d11 75%); }
+  .ph .tag { font-size: 12px; letter-spacing: .08em; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin-bottom: 14px; }
+  .ph .t { font-size: clamp(18px, 3vw, 30px); font-weight: 700; margin-bottom: 10px; }
+  .ph .d { font-size: clamp(14px, 1.9vw, 19px); color: #cfd4dc; max-width: 760px; }
+  .hud { position: absolute; top: 10px; left: 12px; font-size: 13px; color: #fff; background: rgba(0,0,0,.45);
+         padding: 3px 10px; border-radius: 999px; }
+  .banner { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.7);
+            border: 1px solid rgba(255,255,255,.25); color: #fff; font-weight: 700; padding: 6px 16px; border-radius: 10px;
+            font-size: clamp(13px, 1.8vw, 18px); white-space: nowrap; }
+  .vitals { position: absolute; top: 46px; right: 12px; background: rgba(6,10,14,.82); border: 1px solid #2f6f45;
+            border-radius: 10px; padding: 8px 12px; font-variant-numeric: tabular-nums; min-width: 170px; }
+  .vitals div { display: flex; justify-content: space-between; gap: 14px; font-size: clamp(12px, 1.5vw, 16px); }
+  .vitals b { color: #5ff58a; font-weight: 700; }
+  .vitals .warn b { color: #ffb84d; }
+  .subs { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); width: min(92%, 900px); text-align: center; }
+  .subs span { background: rgba(0,0,0,.72); color: #fff; padding: 4px 12px; border-radius: 6px; line-height: 1.8;
+               font-size: clamp(14px, 2vw, 21px); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .subs em { font-style: normal; color: #9fd0ff; margin-right: 6px; }
+  .skip { position: absolute; right: 12px; bottom: 10px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.3);
+          color: #fff; border-radius: 8px; padding: 4px 10px; font-size: 13px; }
+  .metro { position: absolute; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 13px;
+           background: rgba(0,0,0,.5); padding: 4px 10px; border-radius: 999px; }
+  .metro i { width: 12px; height: 12px; border-radius: 50%; background: #ff5a5a; opacity: .25; }
+  .metro i.on { opacity: 1; }
+  .idcards { position: absolute; top: 46px; right: 12px; display: grid; gap: 8px; width: min(40%, 300px); }
+  .idc { background: #f6f1e6; color: #222; border-radius: 10px; padding: 8px 12px; font-size: clamp(11px, 1.4vw, 14px);
+         box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+  .idc b { display: block; color: #b3261e; font-size: 1.05em; }
+  .aed { position: absolute; top: 46px; right: 12px; width: min(42%, 340px); background: #222; border: 3px solid #f1771f;
+         border-radius: 14px; padding: 10px; color: #fff; }
+  .aed .scr { background: #071a10; border-radius: 8px; padding: 6px 8px; }
+  .aed canvas { width: 100%; height: 70px; display: block; }
+  .aed .say { font-size: clamp(12px, 1.5vw, 15px); margin-top: 6px; font-weight: 600; }
+  .aed .shock { margin-top: 8px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .aed .shock i { width: 30px; height: 30px; border-radius: 50%; background: #f1771f; animation: blink 0.8s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  /* ── 결정 패널 ── */
+  .decision { margin-top: 14px; }
+  .decision .q { font-size: clamp(17px, 2.2vw, 21px); font-weight: 700; margin: 0 0 12px; }
+  .timer { height: 8px; background: var(--panel-2); border-radius: 999px; overflow: hidden; margin-bottom: 12px; }
+  .timer i { display: block; height: 100%; background: var(--warning); width: 100%; }
+  .timer-label { font-size: 13px; color: var(--warning); margin: -6px 0 10px; font-variant-numeric: tabular-nums; }
+  .opts { display: grid; gap: 10px; }
+  .opt { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px;
+         display: flex; gap: 12px; align-items: flex-start; }
+  .opt:hover { border-color: var(--accent); }
+  .opt .k { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; background: var(--panel-2); display: grid; place-items: center; font-weight: 700; }
+  .opt.sel { border-color: var(--accent); background: #16263d; }
+  .opt input { margin-top: 6px; transform: scale(1.2); }
+  .tri { display: grid; gap: 10px; }
+  .tri .p { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid;
+            grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  @media (max-width: 640px) { .tri .p { grid-template-columns: 1fr; } }
+  .tri .who2 { font-weight: 700; margin-right: 6px; }
+  .tags { display: flex; gap: 6px; }
+  .tags button { border: 2px solid transparent; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 14px; color: #fff; }
+  .tags .green { background: var(--green); } .tags .yellow { background: var(--yellow); color: #111; }
+  .tags .red { background: var(--red); } .tags .black { background: var(--black); border-color: #555; }
+  .tags button { opacity: .45; } .tags button.sel { opacity: 1; outline: 3px solid #fff; outline-offset: 1px; }
+  .pads { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 700px) { .pads { grid-template-columns: 1fr; } }
+  .pads svg { width: 100%; background: #10141b; border-radius: 12px; border: 1px solid var(--line); cursor: crosshair; touch-action: manipulation; }
+  .sbar-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  @media (max-width: 700px) { .sbar-slots { grid-template-columns: 1fr 1fr; } }
+  .slot { min-height: 96px; border: 2px dashed var(--line); border-radius: 12px; padding: 8px 10px; font-size: 14px; background: var(--panel); text-align: left; }
+  .slot b { display: block; font-size: 18px; color: var(--accent); }
+  .slot.filled { border-style: solid; border-color: var(--accent); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .cards button { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .cards button:disabled { opacity: .25; cursor: default; }
+  .actions { margin-top: 14px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+  /* ── 결과 ── */
+  .ending { border-radius: 14px; padding: 22px; margin-bottom: 16px; border: 1px solid var(--line); }
+  .ending.correct { background: linear-gradient(135deg, #0f2e1b, #121820); border-color: #1f6b3a; }
+  .ending.partial { background: linear-gradient(135deg, #33290c, #121820); border-color: #7a6116; }
+  .ending.critical { background: linear-gradient(135deg, #3a1214, #121820); border-color: #7c2427; }
+  .ending .code { font-size: 13px; color: var(--ink-2); letter-spacing: .06em; }
+  .ending .lab { font-size: 28px; font-weight: 800; margin: 2px 0 6px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .kpi .k { font-size: 13px; color: var(--ink-2); } .kpi .v { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--ink-2); font-weight: 500; }
+  td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .vt { font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .vt.correct { color: #4fd36a; } .vt.partial { color: var(--warning); } .vt.wrong { color: var(--neutral); }
+  .vt.critical { color: #ff6b6b; } .vt.none { color: var(--ink-2); }
+  .fb { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
+  .delays li { margin: 4px 0; }
+  .closing { list-style: none; padding: 0; margin: 0; }
+  .closing li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .closing li:last-child { border: 0; }
+  .sec { margin-top: 16px; }
+  .lik { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  @media (max-width: 640px) { .lik { grid-template-columns: 1fr; } }
+  .lik .scale { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink-2); }
+  .lik .scale button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); font-weight: 700; }
+  .lik .scale button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #2a2f39; border: 1px solid var(--line);
+           padding: 8px 14px; border-radius: 10px; font-size: 14px; z-index: 50; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 로그인 -->
+  <section id="scrLogin">
+    <h1>재난·응급 분기형 시뮬레이션</h1>
+    <p class="sub">폭우로 인한 터널 붕괴 — 다수사상자 대응과 심정지 환자 소생 (V9 프로토타입)</p>
+    <div class="card" style="max-width:520px;margin-top:18px">
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" role="tab" aria-selected="true">로그인</button>
+        <button id="tabReg" role="tab" aria-selected="false">회원가입</button>
+      </div>
+      <form id="fLogin">
+        <label class="f">학번</label><input type="text" name="studentNo" autocomplete="username" required>
+        <label class="f">비밀번호</label><input type="password" name="password" autocomplete="current-password" required>
+        <div class="actions"><button class="btn primary" type="submit">로그인</button></div>
+      </form>
+      <form id="fReg" class="hidden">
+        <div class="grid2">
+          <div><label class="f">학번 *</label><input type="text" name="studentNo" required></div>
+          <div><label class="f">이름 *</label><input type="text" name="name" required></div>
+          <div><label class="f">비밀번호 * (6자 이상)</label><input type="password" name="password" minlength="6" required></div>
+          <div><label class="f">분반 코드 * (교수님께 받은 코드)</label><input type="text" name="classCode" required></div>
+          <div><label class="f">학교</label><input type="text" name="school"></div>
+          <div><label class="f">학과</label><input type="text" name="dept"></div>
+          <div><label class="f">학년</label><select name="grade"><option></option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+        </div>
+        <label class="row" style="margin-top:12px;font-size:14px">
+          <input type="checkbox" name="consent"> 학습 기록(선택, 응답 시간, 점수, 성찰)과 학번·이름 수집에 동의합니다. 수업 운영과 디브리핑에만 사용합니다.
+        </label>
+        <div class="actions"><button class="btn primary" type="submit">가입하고 시작</button></div>
+      </form>
+      <div class="msg" id="loginMsg"></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <button class="btn ghost" id="btnGuest">로그인 없이 체험하기 (기록되지 않음)</button>
+    </div>
+  </section>
+
+  <!-- 사전 브리핑 -->
+  <section id="scrBrief" class="hidden">
+    <div class="topbar"><h1>사전 브리핑</h1><span class="who" id="who1"></span></div>
+    <div class="card">
+      <h2>당신은 퇴근길 터널에 갇힌 간호사입니다</h2>
+      <p>장마철 집중호우 속, 왕복 2차선 터널을 지나던 중 터널 일부가 무너집니다. 현장에는 부상자들이 있고,
+        추가 붕괴 위험이 남아 있습니다. 당신은 현장의 유일한 의료인으로서 판단하고 지시해야 합니다.</p>
+      <ul>
+        <li><b>선택은 되돌릴 수 없습니다.</b> 선택에 따라 이야기가 달라지고, 결말도 달라집니다.</li>
+        <li>일부 질문에는 <b>제한 시간</b>(10~20초)이 있습니다. 실제 현장처럼 망설이는 시간도 기록됩니다.</li>
+        <li>정답 여부는 <b>마지막 리포트</b>에서 한꺼번에 공개됩니다.</li>
+        <li>이 시뮬레이션은 평가가 아니라 학습을 위한 것입니다. 실수해도 괜찮습니다. 끝난 뒤 함께 이야기합니다.</li>
+      </ul>
+      <h2 style="margin-top:18px">설정</h2>
+      <div class="grid2">
+        <div><label class="f">임시 컷 재생 시간 (영상이 아직 없는 장면)</label>
+          <select id="setPh"><option value="4">짧게 (4초)</option><option value="6" selected>보통 (6초)</option><option value="10">길게 (10초)</option></select></div>
+        <div><label class="f">음성 안내 (임시 컷 대사·AED 음성을 기계음으로 읽기)</label>
+          <select id="setTts"><option value="on" selected>켜기</option><option value="off">끄기</option></select></div>
+      </div>
+      <p class="sub" style="margin-top:14px">🎧 소리를 켜 주세요. 컴퓨터나 태블릿 화면을 권장합니다.</p>
+      <div class="actions"><button class="btn primary" id="btnStart">시뮬레이션 시작</button></div>
+    </div>
+  </section>
+
+  <!-- 플레이 -->
+  <section id="scrPlay" class="hidden">
+    <div class="topbar"><strong id="playTitle">재난·응급 시뮬레이션</strong><span class="who" id="who2"></span></div>
+    <div class="stage" id="stage">
+      <video id="vid" playsinline preload="auto"></video>
+      <div class="ph hidden" id="ph"><span class="tag">임시 컷 · 영상 제작 예정</span><div class="t" id="phT"></div><div class="d" id="phD"></div></div>
+      <div class="hud" id="hud"></div>
+      <div class="banner hidden" id="banner"></div>
+      <div class="vitals hidden" id="vitals"></div>
+      <div class="idcards hidden" id="idcards">
+        <div class="idc"><b>응급 식별표 · 심근경색 환자</b>관상동맥질환 · 흉통 시 NTG 설하 복용</div>
+        <div class="idc"><b>관상동맥 스텐트 시술 확인카드</b>스텐트 삽입술 시행</div>
+        <div class="idc"><b>Nitroglycerin 0.4 mg</b>설하정 · 흉통 시 1정</div>
+      </div>
+      <div class="aed hidden" id="aed">
+        <div class="scr"><canvas id="ecg" width="600" height="140"></canvas></div>
+        <div class="say" id="aedSay"></div>
+        <div class="shock hidden" id="aedShock"><i></i>충격 버튼</div>
+      </div>
+      <div class="metro hidden" id="metro"><i id="metroDot"></i>110회/분</div>
+      <div class="subs" id="subs"></div>
+      <button class="skip hidden" id="btnSkip">건너뛰기 ▶▶</button>
+    </div>
+    <div class="decision hidden" id="decision"></div>
+  </section>
+
+  <!-- 결과 -->
+  <section id="scrResult" class="hidden">
+    <div class="topbar"><h1>결과 리포트</h1><span class="who" id="who3"></span></div>
+    <div id="resultBody"></div>
+  </section>
+</div>
+
+<script src="scenario.js"></script>
+<script>
+/* ───────── 설정 ───────── */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyzkpBY382Mk6K7xkDGeG-ZnCpCqLiThpim0p-NMxfwHOnp8QCZpg2zH2ygN28gvm17yg/exec';
+const SC = window.SCENARIO;
+const N = SC.nodes;
+const DP_ORDER = ['DP1', 'DP2', 'DP3', 'DP4-1', 'DP4-2', 'DP5', 'DP6', 'DP7', 'DP8-1', 'DP8-2', 'DP8-3', 'DP9'];
+const VERDICT_LABEL = { correct: '✓ 정답', partial: '⚠ 부분', wrong: '오답', critical: '☠ 치명', none: '미도달' };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function toast(t, ms = 2600) {
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = t;
+  document.body.appendChild(el); setTimeout(() => el.remove(), ms);
+}
+function show(id) {
+  ['scrLogin', 'scrBrief', 'scrPlay', 'scrResult'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
+  window.scrollTo(0, 0);
+}
+
+/* ───────── 서버 통신 ───────── */
+const session = JSON.parse(sessionStorage.getItem('simSession') || 'null') || { guest: false };
+async function api(action, body = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action, token: session.token }, body))
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || '서버 오류');
+  return j;
+}
+const pending = []; // 전송 실패한 기록 (마지막에 재시도)
+function record(action, body) {
+  if (session.guest) return Promise.resolve();
+  return api(action, body).catch(() => { pending.push([action, body]); });
+}
+
+/* ───────── 로그인 화면 ───────── */
+function setTab(reg) {
+  $('tabLogin').setAttribute('aria-selected', !reg); $('tabReg').setAttribute('aria-selected', reg);
+  $('fLogin').classList.toggle('hidden', reg); $('fReg').classList.toggle('hidden', !reg); $('loginMsg').textContent = '';
+}
+$('tabLogin').onclick = () => setTab(false);
+$('tabReg').onclick = () => setTab(true);
+function loginMsg(t, err) { $('loginMsg').textContent = t; $('loginMsg').className = 'msg' + (err ? ' err' : ''); }
+function afterLogin(r) {
+  session.guest = false; session.token = r.token; session.user = r.user;
+  sessionStorage.setItem('simSession', JSON.stringify(session)); toBrief();
+}
+$('fLogin').onsubmit = async (e) => {
+  e.preventDefault(); const f = new FormData(e.target); loginMsg('로그인 중…');
+  try { afterLogin(await api('login', { studentNo: f.get('studentNo').trim(), password: f.get('password') })); }
+  catch (err) { loginMsg(err.message, true); }
+};
+$('fReg').onsubmit = async (e) => {
+  e.preventDefault(); const f = new FormData(e.target);
+  if (!f.get('consent')) return loginMsg('기록 수집에 동의해야 가입할 수 있습니다.', true);
+  loginMsg('가입 중…');
+  try {
+    afterLogin(await api('register', {
+      studentNo: f.get('studentNo').trim(), name: f.get('name').trim(), password: f.get('password'),
+      classCode: f.get('classCode').trim(), school: f.get('school'), dept: f.get('dept'), grade: f.get('grade'), consent: true
+    }));
+  } catch (err) { loginMsg(err.message, true); }
+};
+$('btnGuest').onclick = () => { session.guest = true; session.user = { name: '체험 모드' }; toBrief(); };
+function whoText() {
+  return session.guest ? '체험 모드 · 기록되지 않음' : `${session.user.name} (${session.user.studentNo}) · ${session.user.classCode}`;
+}
+function toBrief() { ['who1', 'who2', 'who3'].forEach((i) => ($(i).textContent = whoText())); show('scrBrief'); }
+
+/* ───────── 게임 상태 ───────── */
+let S;
+function newState() {
+  return { node: SC.start, cprDelay: 0, sceneDelay: 0, flags: {}, ending: null, triage: {},
+           log: {}, delays: [], attemptId: null, startedAt: Date.now() };
+}
+function applyEffects(dp, eff) {
+  if (!eff) return;
+  if (eff.cprDelay) { S.cprDelay += eff.cprDelay; S.delays.push({ dp, sec: eff.cprDelay, kind: '가슴압박 지연' }); }
+  if (eff.sceneDelay) { S.sceneDelay += eff.sceneDelay; S.delays.push({ dp, sec: eff.sceneDelay, kind: '재난 대응 지연' }); }
+  if (eff.flag) S.flags[eff.flag] = true;
+}
+
+$('btnStart').onclick = async () => {
+  settings.ph = Number($('setPh').value); settings.tts = $('setTts').value === 'on';
+  unlockAudio();
+  S = newState();
+  show('scrPlay');
+  if (!session.guest) {
+    try { S.attemptId = (await api('startAttempt', { scenario: SC.version })).attemptId; }
+    catch (err) {
+      if (/로그인/.test(err.message)) { toast('로그인이 만료되었습니다. 다시 로그인하세요.'); sessionStorage.removeItem('simSession'); return show('scrLogin'); }
+      toast('서버 연결이 불안정합니다. 기록은 끝에서 다시 시도합니다.');
+    }
+  }
+  run(SC.start);
+};
+
+/* ───────── 진행 엔진 ───────── */
+const settings = { ph: 6, tts: true };
+async function run(id) {
+  while (id) {
+    S.node = id;
+    const n = N[id];
+    if (id === 'END') return finish();
+    if (!n) { console.error('없는 노드', id); return finish(); }
+    if (n.ending) S.ending = n.ending;
+    if (n.type === 'video') { await playNode(id, n); id = typeof n.route === 'function' ? n.route(S) : n.next; }
+    else if (n.type === 'decision') { id = await decide(id, n); }
+    else if (n.type === 'judge') { id = judge(n); }
+  }
+}
+
+function judge(n) {
+  const d = S.cprDelay;
+  if (d <= n.thresholds.a) { S.ending = S.flags.hypoglycemia ? 'END-B' : 'END-A'; return S.ending === 'END-A' ? 'N18' : 'N18B'; }
+  if (d <= n.thresholds.b) { S.ending = 'END-B'; return 'N18B'; }
+  S.ending = 'END-C'; return 'ENDC_CLIP';
+}
+
+/* ───────── 영상 / 임시 컷 재생 ───────── */
+let skipFlag = false;
+$('btnSkip').onclick = () => { skipFlag = true; vid.pause(); speechSynthesis.cancel(); };
+const vid = $('vid');
+
+async function playNode(id, n) {
+  skipFlag = false;
+  $('stage').classList.remove('dim');
+  $('decision').classList.add('hidden');
+  $('hud').textContent = n.title + (n.wrong ? '' : '');
+  setOverlays(n);
+  $('btnSkip').classList.remove('hidden');
+  const clips = (n.clips || []).slice();
+  let played = false;
+  for (const src of clips) {
+    if (skipFlag) break;
+    const ok = await playClip(src, n.lines);
+    if (ok) played = true;
+  }
+  if (!played && !skipFlag) await playPlaceholder(n);
+  $('btnSkip').classList.add('hidden');
+  stopMetronome();
+  $('subs').innerHTML = '';
+}
+
+function playClip(src, lines) {
+  return new Promise((resolve) => {
+    $('ph').classList.add('hidden'); vid.classList.remove('hidden');
+    let subTimer = null, done = false;
+    const end = (ok) => {
+      if (done) return; done = true; clearInterval(subTimer); clearInterval(skipPoll);
+      vid.onended = vid.onerror = vid.onloadedmetadata = null; resolve(ok);
+    };
+    const skipPoll = setInterval(() => skipFlag && end(true), 150);
+    vid.onerror = () => end(false);
+    vid.onended = () => end(true);
+    vid.onloadedmetadata = () => {
+      const L = lines || [];
+      if (!L.length) return;
+      let i = 0; showSub(L[0]);
+      const step = Math.max(2500, (vid.duration * 1000) / L.length);
+      subTimer = setInterval(() => { i++; if (i < L.length) showSub(L[i]); }, step);
+    };
+    vid.src = encodeURI(src);
+    vid.play().catch(() => end(false));
+  });
+}
+
+async function playPlaceholder(n) {
+  vid.pause(); vid.removeAttribute('src'); vid.load(); vid.classList.add('hidden');
+  $('ph').classList.remove('hidden'); $('ph').classList.toggle('wrong', !!n.wrong);
+  $('phT').textContent = n.title; $('phD').textContent = n.desc || '';
+  const L = n.lines || [];
+  const t0 = Date.now();
+  if (settings.tts && L.length && 'speechSynthesis' in window) {
+    for (const line of L) {
+      if (skipFlag) break;
+      showSub(line);
+      await speak(line[1]);
+      await sleep(250);
+    }
+  } else {
+    const per = (settings.ph * 1000) / Math.max(L.length, 1);
+    for (const line of L.length ? L : [null]) {
+      if (skipFlag) break;
+      if (line) showSub(line);
+      await waitOrSkip(per);
+    }
+  }
+  const rest = settings.ph * 1000 - (Date.now() - t0);
+  if (rest > 0 && !skipFlag) await waitOrSkip(Math.min(rest, 2500));
+}
+async function waitOrSkip(ms) { const t = Date.now(); while (Date.now() - t < ms && !skipFlag) await sleep(100); }
+
+function showSub(line) {
+  if (!line) return;
+  const [who, text] = line;
+  $('subs').innerHTML = `<span>${who ? `<em>${esc(who)}</em>` : ''}${esc(text)}</span>`;
+}
+
+/* 기계음 (Web Speech) */
+let koVoice = null;
+function pickVoice() { koVoice = speechSynthesis.getVoices().find((v) => /ko/i.test(v.lang)) || null; }
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text) {
+  return new Promise((resolve) => {
+    const clean = String(text).replace(/[()]/g, '');
+    if (!clean.trim() || !('speechSynthesis' in window)) return resolve();
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = 'ko-KR'; if (koVoice) u.voice = koVoice; u.rate = 1.08;
+    const guard = setTimeout(resolve, Math.max(3000, clean.length * 260));
+    u.onend = u.onerror = () => { clearTimeout(guard); resolve(); };
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ───────── 오버레이 ───────── */
+function setOverlays(n) {
+  $('banner').classList.toggle('hidden', !n.banner); $('banner').textContent = n.banner || '';
+  // 활력징후
+  let v = n.vitals ? Object.assign({}, n.vitals) : null;
+  if (v && S.flags.hypoglycemia && (S.node === 'N18' || S.node === 'N18B')) v.BST = '48 mg/dL ⚠';
+  if (n.keepVitals && S.lastVitals) v = S.lastVitals;
+  if (v) { S.lastVitals = v; }
+  $('vitals').classList.toggle('hidden', !v);
+  if (v) $('vitals').innerHTML = Object.entries(v).map(([k, val]) =>
+    `<div class="${/⚠/.test(val) ? 'warn' : ''}"><span>${esc(k)}</span><b>${esc(val)}</b></div>`).join('');
+  // 식별표
+  $('idcards').classList.toggle('hidden', n.overlay !== 'idcard');
+  // AED
+  const aedMode = n.overlay && n.overlay.startsWith('aed') ? n.overlay : null;
+  $('aed').classList.toggle('hidden', !aedMode);
+  if (aedMode) startECG(aedMode);
+  else stopECG();
+  // 분류 결과
+  if (n.showTriage) {
+    const names = { green: '녹색', yellow: '황색', red: '적색', black: '흑색' };
+    $('banner').classList.remove('hidden');
+    $('banner').textContent = 'START 분류: ' + Object.entries(S.triage).map(([k, c]) => `${k} ${names[c] || '-'}`).join(' · ');
+  }
+  // 메트로놈
+  if (n.metronome) startMetronome(); else stopMetronome();
+}
+
+/* AED 심전도 캔버스 */
+let ecgRAF = null;
+function startECG(mode) {
+  const say = { 'aed-analyze': '🔊 심장리듬을 분석합니다. 환자에게서 떨어지십시오.',
+                'aed-shock': '🔊 제세동이 필요합니다. 충전 완료. 깜빡이는 버튼을 누르십시오.',
+                'aed-noshock': '🔊 제세동이 필요하지 않습니다. 가슴압박을 계속하십시오.' }[mode];
+  $('aedSay').textContent = say;
+  $('aedShock').classList.toggle('hidden', mode !== 'aed-shock');
+  const c = $('ecg'), g = c.getContext('2d');
+  let x = 0, t = 0;
+  cancelAnimationFrame(ecgRAF);
+  g.fillStyle = '#071a10'; g.fillRect(0, 0, c.width, c.height);
+  let py = c.height / 2;
+  const draw = () => {
+    for (let k = 0; k < 3; k++) {
+      t += 0.05;
+      let y;
+      if (mode === 'aed-noshock') y = c.height / 2 + Math.sin(t * 0.7) * 2 + (Math.random() - 0.5) * 2; // 무수축에 가까운 선
+      else y = c.height / 2 + Math.sin(t * 3.1) * 22 + Math.sin(t * 5.3 + 1) * 14 + Math.sin(t * 1.7) * 10; // 심실세동(VF)
+      g.fillStyle = '#071a10'; g.fillRect(x, 0, 10, c.height);
+      g.strokeStyle = '#5ff58a'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(x - 2, py); g.lineTo(x, y); g.stroke();
+      py = y; x += 2; if (x > c.width) { x = 0; }
+    }
+    ecgRAF = requestAnimationFrame(draw);
+  };
+  draw();
+  if (settings.tts && mode !== 'aed-analyze') speak(say.replace('🔊 ', ''));
+}
+function stopECG() { cancelAnimationFrame(ecgRAF); ecgRAF = null; }
+
+/* 메트로놈 (110회/분) */
+let metroTimer = null, actx = null;
+function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {} }
+function startMetronome() {
+  stopMetronome(); $('metro').classList.remove('hidden');
+  metroTimer = setInterval(() => {
+    $('metroDot').classList.add('on'); setTimeout(() => $('metroDot').classList.remove('on'), 120);
+    if (actx) {
+      const o = actx.createOscillator(), gn = actx.createGain();
+      o.frequency.value = 1000; gn.gain.value = 0.05; o.connect(gn); gn.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + 0.03);
+    }
+  }, 60000 / 110);
+}
+function stopMetronome() { clearInterval(metroTimer); metroTimer = null; $('metro').classList.add('hidden'); }
+
+/* ───────── 결정 지점 ───────── */
+function decide(id, n) {
+  return new Promise((resolve) => {
+    $('stage').classList.add('dim');
+    $('hud').textContent = '결정의 순간';
+    setOverlays(Object.assign({}, n, { vitals: null, banner: null, metronome: false }));
+    if (!n.keepVitals) $('vitals').classList.add('hidden');
+    const box = $('decision'); box.classList.remove('hidden');
+    const t0 = Date.now();
+    let timer = null, closed = false;
+    const done = (entry, next) => {
+      if (closed) return; closed = true; clearInterval(timer);
+      entry.ms = Date.now() - t0; entry.dp = n.dp; entry.prompt = n.prompt; entry.max = n.points;
+      entry.cprDelayBefore = S.cprDelay;
+      applyEffects(n.dp, entry.effects);
+      S.log[n.dp] = entry;
+      record('logChoice', {
+        attemptId: S.attemptId, dp: n.dp, choice: entry.choiceKeys, correct: entry.verdict === 'correct',
+        responseMs: entry.ms, critical: entry.verdict === 'critical', cprDelayAt: S.cprDelay
+      });
+      box.innerHTML = '<p class="sub">선택이 기록되었습니다…</p>';
+      setTimeout(() => { box.classList.add('hidden'); resolve(typeof n.route === 'function' ? n.route(S) : next); }, 500);
+    };
+    // 제한 시간
+    let timerHtml = '';
+    if (n.timeLimit) timerHtml = `<div class="timer"><i id="tbar"></i></div><div class="timer-label" id="tlab"></div>`;
+    const head = `<p class="q">${esc(n.prompt)}</p>${timerHtml}`;
+    const R = { single: uiSingle, multi: uiMulti, triage: uiTriage, pads: uiPads, sbar: uiSbar }[n.ui];
+    R(box, n, head, done);
+    if (n.timeLimit) {
+      const lim = n.timeLimit * 1000;
+      timer = setInterval(() => {
+        const left = Math.max(0, lim - (Date.now() - t0));
+        const bar = $('tbar'); if (bar) bar.style.width = (left / lim * 100) + '%';
+        const lab = $('tlab'); if (lab) lab.textContent = `남은 시간 ${Math.ceil(left / 1000)}초`;
+        if (left <= 0) {
+          if (n.timeoutKey === 'TIMEOUT') {
+            const t = n.timeout;
+            done({ choiceKeys: 'TIMEOUT', choiceText: '⏱ 시간 초과 (결정하지 못함)', verdict: t.verdict, points: t.points, fb: t.fb, effects: t.effects }, t.next);
+          } else {
+            const o = n.options.find((x) => x.key === n.timeoutKey);
+            done(optEntry(o, ' (⏱ 시간 초과)'), o.next);
+          }
+        }
+      }, 100);
+    }
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+}
+function optEntry(o, suffix = '') {
+  const pts = o.verdict === 'correct' ? null : (o.points != null ? o.points : 0);
+  return { choiceKeys: o.key, choiceText: `${o.key}. ${o.text}${suffix}`, verdict: o.verdict, points: pts, fb: o.fb, effects: o.effects };
+}
+
+function uiSingle(box, n, head, done) {
+  box.innerHTML = head + '<div class="opts">' + n.options.map((o) =>
+    `<button class="opt" data-k="${esc(o.key)}"><span class="k">${esc(o.key)}</span><span>${esc(o.text)}</span></button>`).join('') + '</div>';
+  box.querySelectorAll('.opt').forEach((b) => b.onclick = () => {
+    const o = n.options.find((x) => x.key === b.dataset.k);
+    const e = optEntry(o); if (e.points == null) e.points = n.points;
+    done(e, o.next);
+  });
+}
+
+function uiMulti(box, n, head, done) {
+  box.innerHTML = head + '<div class="opts">' + n.options.map((o) =>
+    `<label class="opt"><input type="checkbox" value="${esc(o.key)}"><span>${esc(o.text)}</span></label>`).join('') +
+    '</div><div class="actions"><button class="btn primary" id="mOk">확인</button></div>';
+  box.querySelectorAll('.opt input').forEach((c) => c.onchange = () => c.closest('.opt').classList.toggle('sel', c.checked));
+  $('mOk').onclick = () => {
+    const sel = [...box.querySelectorAll('input:checked')].map((c) => c.value);
+    const right = n.options.filter((o) => o.verdict === 'correct').map((o) => o.key);
+    let hit = 0; n.options.forEach((o) => { if ((o.verdict === 'correct') === sel.includes(o.key)) hit++; });
+    const exact = hit === n.options.length;
+    done({ choiceKeys: sel, choiceText: sel.length ? sel.map((k) => n.options.find((o) => o.key === k).text).join(' / ') : '(선택 없음)',
+           verdict: exact ? 'correct' : hit >= n.options.length - 2 ? 'partial' : 'wrong',
+           points: Math.round(n.points * hit / n.options.length * 10) / 10,
+           fb: `정답: ${right.map((k) => n.options.find((o) => o.key === k).text).join(' / ')}. ${n.fb || ''}` }, n.next);
+  };
+}
+
+function uiTriage(box, n, head, done) {
+  const pts = n.patients.filter((p) => !p.onlyIf || S.flags[p.onlyIf]);
+  const names = { green: '녹색', yellow: '황색', red: '적색', black: '흑색' };
+  const pick = {};
+  box.innerHTML = head + '<div class="tri">' + pts.map((p) =>
+    `<div class="p"><div><span class="who2">환자 ${esc(p.key)}</span>${esc(p.info)}</div>
+      <div class="tags" data-p="${esc(p.key)}">${Object.keys(names).map((c) => `<button class="${c}" data-c="${c}">${names[c]}</button>`).join('')}</div></div>`).join('') +
+    '</div><div class="actions"><button class="btn primary" id="tOk" disabled>분류 완료</button></div>';
+  box.querySelectorAll('.tags').forEach((g) => g.querySelectorAll('button').forEach((b) => b.onclick = () => {
+    pick[g.dataset.p] = b.dataset.c;
+    g.querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b));
+    $('tOk').disabled = Object.keys(pick).length < pts.length;
+  }));
+  $('tOk').onclick = () => {
+    S.triage = Object.assign({}, pick);
+    const ok = pts.filter((p) => pick[p.key] === p.answer);
+    done({ choiceKeys: ok.map((p) => p.key),
+           choiceText: pts.map((p) => `${p.key}:${names[pick[p.key]]}${pick[p.key] === p.answer ? '' : `(정답 ${names[p.answer]})`}`).join(' · '),
+           verdict: ok.length === pts.length ? 'correct' : ok.length >= pts.length / 2 ? 'partial' : 'wrong',
+           points: Math.round(n.points * ok.length / pts.length * 10) / 10, fb: n.fb }, n.next);
+  };
+}
+
+function uiPads(box, n, head, done) {
+  // 화면 기준 좌표 (환자의 오른쪽 = 화면 왼쪽)
+  // R: 오른쪽 쇄골 바로 아래 / L: 왼쪽 젖꼭지(y=150)보다 아래, 중간겨드랑선(몸통 가장자리 쪽)
+  const zones = { R: { x: 112, y: 92, r: 34 }, L: { x: 242, y: 200, r: 34 } };
+  const pads = [];
+  box.innerHTML = head + `<div class="pads"><svg id="torso" viewBox="0 0 320 360" role="img" aria-label="환자 가슴 그림">
+      <path d="M60 40 Q160 8 260 40 L276 150 Q282 250 250 345 L70 345 Q38 250 44 150 Z" fill="#c9a58a" stroke="#8a6a55" stroke-width="2"/>
+      <path d="M95 66 Q130 78 156 70 M164 70 Q190 78 225 66" stroke="#8a6a55" stroke-width="3" fill="none"/>
+      <line x1="160" y1="70" x2="160" y2="215" stroke="#a8836b" stroke-width="3"/>
+      <circle cx="122" cy="150" r="5" fill="#9b6b58"/><circle cx="198" cy="150" r="5" fill="#9b6b58"/>
+      <text x="40" y="26" fill="#a3a9b5" font-size="12">환자의 오른쪽</text>
+      <text x="200" y="26" fill="#a3a9b5" font-size="12">환자의 왼쪽</text>
+      <g id="padLayer"></g></svg>
+    <div><p>환자는 바닥에 누워 있고, 당신은 환자를 내려다보고 있습니다.</p>
+      <p class="sub">그림을 눌러 패드를 붙이세요. 두 장을 붙인 뒤 다시 누르면 먼저 붙인 패드부터 옮겨집니다.</p>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="btn" id="pReset">다시 붙이기</button><button class="btn primary" id="pOk" disabled>부착 완료</button></div></div></div>`;
+  const svg = $('torso');
+  const redraw = () => {
+    $('padLayer').innerHTML = pads.map((p, i) =>
+      `<rect x="${p.x - 26}" y="${p.y - 18}" width="52" height="36" rx="8" fill="#f4f6f8" stroke="#f1771f" stroke-width="3"/>
+       <text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="#f1771f">${i + 1}</text>`).join('');
+    $('pOk').disabled = pads.length < 2;
+  };
+  let nextIdx = 0;
+  svg.onclick = (e) => {
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    if (pads.length < 2) pads.push({ x: p.x, y: p.y }); else { pads[nextIdx] = { x: p.x, y: p.y }; nextIdx = 1 - nextIdx; }
+    redraw();
+  };
+  $('pReset').onclick = () => { pads.length = 0; nextIdx = 0; redraw(); };
+  $('pOk').onclick = () => {
+    const inZ = (z) => pads.some((p) => Math.hypot(p.x - z.x, p.y - z.y) <= z.r);
+    const ok = ['R', 'L'].filter((k) => inZ(zones[k]));
+    done({ choiceKeys: ok, choiceText: ok.length === 2 ? '두 패드 모두 올바른 위치' : ok.length === 1 ? '한 장만 올바른 위치' : '두 장 모두 잘못된 위치',
+           verdict: ok.length === 2 ? 'correct' : ok.length === 1 ? 'partial' : 'wrong',
+           points: n.points * ok.length / 2, fb: n.fb, effects: ok.length === 2 ? null : n.wrongEffects }, n.next);
+  };
+}
+
+function uiSbar(box, n, head, done) {
+  const slots = ['S', 'B', 'A', 'R'], fill = { S: null, B: null, A: null, R: null };
+  const cards = n.cards.slice().sort(() => Math.random() - 0.5);
+  const render = () => {
+    const used = Object.values(fill).filter(Boolean);
+    box.innerHTML = head + '<div class="sbar-slots">' + slots.map((s) => {
+      const c = fill[s] && n.cards.find((x) => x.key === fill[s]);
+      return `<button class="slot${c ? ' filled' : ''}" data-s="${s}"><b>${s}</b>${c ? esc(c.text) : '<span class="sub">카드를 고르세요</span>'}</button>`;
+    }).join('') + '</div><div class="cards">' + cards.map((c) =>
+      `<button data-c="${esc(c.key)}" ${used.includes(c.key) ? 'disabled' : ''}>${esc(c.text)}</button>`).join('') +
+      `</div><div class="actions"><button class="btn primary" id="sOk" ${used.length < 4 ? 'disabled' : ''}>인계 완료</button></div>`;
+    box.querySelectorAll('.slot').forEach((b) => b.onclick = () => { fill[b.dataset.s] = null; render(); });
+    box.querySelectorAll('.cards button').forEach((b) => b.onclick = () => {
+      const s = slots.find((x) => !fill[x]); if (s) { fill[s] = b.dataset.c; render(); }
+    });
+    const ok = $('sOk'); if (ok) ok.onclick = () => {
+      const right = slots.filter((s) => fill[s] === s);
+      done({ choiceKeys: right, choiceText: slots.map((s) => `${s}: ${(n.cards.find((c) => c.key === fill[s]) || {}).text || ''}`).join('\n'),
+             verdict: right.length === 4 ? 'correct' : right.length >= 2 ? 'partial' : 'wrong',
+             points: Math.round(n.points * right.length / 4 * 10) / 10, fb: n.fb }, null);
+    };
+  };
+  render();
+}
+
+/* ───────── 결과 ───────── */
+async function finish() {
+  stopMetronome(); stopECG(); speechSynthesis.cancel();
+  const ending = S.ending || 'END-A';
+  const E = SC.endings[ending];
+  let score = 0, crit = 0;
+  DP_ORDER.forEach((k) => { const l = S.log[k]; if (l) { score += l.points || 0; if (l.verdict === 'critical') crit++; } });
+  score = Math.round(score);
+  await record('finishAttempt', { attemptId: S.attemptId, totalScore: score, criticalErrors: crit, ending,
+    cprDelay: S.cprDelay, flags: Object.keys(S.flags) });
+  for (const [a, b] of pending.splice(0)) await record(a, b); // 실패한 기록 재전송
+
+  const titleOf = (k) => (N[k] && N[k].prompt) || k;
+  const rows = DP_ORDER.map((k) => {
+    const l = S.log[k];
+    if (!l) return `<tr><td>${esc(k)}</td><td>${esc(titleOf(k))}</td><td class="sub">—</td><td><span class="vt none">미도달</span></td><td class="n">0 / ${N[k].points}</td></tr>`;
+    return `<tr><td>${esc(k)}</td><td>${esc(l.prompt)}<div class="fb">💡 ${esc(l.fb || '')}</div></td>
+      <td style="white-space:pre-line">${esc(l.choiceText)}<div class="fb">응답 ${(l.ms / 1000).toFixed(1)}초</div></td>
+      <td><span class="vt ${l.verdict}">${VERDICT_LABEL[l.verdict]}</span></td><td class="n">${l.points} / ${l.max}</td></tr>`;
+  }).join('');
+  const delays = S.delays.length
+    ? '<ul class="delays">' + S.delays.map((d) => `<li>${esc(d.dp)} · ${esc(d.kind)} <b>+${d.sec}초</b></li>`).join('') + '</ul>'
+    : '<p class="sub">지연 없이 진행했습니다.</p>';
+  const reachedSbar = !!S.log.DP9;
+  const flagsTxt = { lateEMS: '119 신고 지연', extraRed: '공황으로 부상자 추가', hypoglycemia: '인슐린 오투여 → 저혈당', ntgFail: 'NTG 효과 없음' };
+  const flagList = Object.keys(S.flags).map((f) => flagsTxt[f] || f);
+
+  $('resultBody').innerHTML = `
+    <div class="ending ${E.verdict}"><div class="code">${esc(ending)}</div><div class="lab">${esc(E.label)}</div><div>${esc(E.msg)}</div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">점수</div><div class="v">${score}<span class="sub"> / 100</span></div></div>
+      <div class="kpi"><div class="k">가슴압박 지연 누적</div><div class="v">${S.cprDelay}<span class="sub">초</span></div></div>
+      <div class="kpi"><div class="k">치명 오류</div><div class="v">${crit}<span class="sub">건</span></div></div>
+      <div class="kpi"><div class="k">소요 시간</div><div class="v">${Math.round((Date.now() - S.startedAt) / 60000)}<span class="sub">분</span></div></div>
+    </div>
+    ${flagList.length ? `<div class="card sec"><h2>내 선택이 바꾼 상황</h2><ul>${flagList.map((f) => `<li>${esc(f)}</li>`).join('')}</ul></div>` : ''}
+    <div class="card sec"><h2>시간을 잃은 곳</h2>${delays}</div>
+    <div class="card sec" style="overflow-x:auto"><h2>결정 지점별 결과</h2>
+      <table><thead><tr><th>DP</th><th>질문 · 해설</th><th>내 선택</th><th>판정</th><th class="n">점수</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="card sec"><h2>교육 메시지</h2><ul class="closing">${SC.closing.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></div>
+    <div class="card sec"><h2>성찰</h2>
+      ${reachedSbar ? '' : `<label class="f">SBAR 단계에 도달하지 못했습니다. 이 환자를 구조대에 인계한다고 생각하고 SBAR를 직접 작성해 보세요.</label>
+        <textarea id="rfSbar" placeholder="S: &#10;B: &#10;A: &#10;R: "></textarea>`}
+      <label class="f">오늘 시뮬레이션에서 실제 현장에서도 꼭 기억할 한 가지는 무엇인가요? 그 순간 어떤 생각이 들었나요?</label>
+      <textarea id="rfText"></textarea>
+      <div class="actions">
+        <button class="btn primary" id="btnRf">${session.guest ? '체험 모드는 저장되지 않습니다' : '성찰 저장'}</button>
+      </div></div>
+    <div class="card sec"><h2>파일럿 설문 (1분)</h2>
+      <p class="sub">프로그램 개선에 쓰입니다. 1 = 전혀 아니다 · 5 = 매우 그렇다</p>
+      ${[['immersion', '실제 현장에 있는 것처럼 몰입되었다'], ['difficulty', '선택이 쉽지 않았고 고민하게 만들었다'],
+         ['placeholderDisturb', '영상 대신 나온 임시 컷이 몰입을 방해했다']].map(([k, q]) =>
+        `<div class="lik"><div>${esc(q)}</div><div class="scale" data-k="${k}">${[1, 2, 3, 4, 5].map((v) => `<button data-v="${v}" aria-label="${v}점">${v}</button>`).join('')}</div></div>`).join('')}
+      <label class="f">가장 먼저 실제 영상으로 보고 싶은 장면이나 바라는 점 (선택)</label>
+      <textarea id="svCmt" style="min-height:70px"></textarea>
+      <div class="actions"><button class="btn primary" id="btnSv" disabled>${session.guest ? '체험 모드는 저장되지 않습니다' : '설문 제출'}</button></div></div>
+    <div class="actions"><button class="btn" id="btnAgain">처음부터 다시 하기</button><button class="btn ghost" id="btnOut">로그아웃</button></div>
+    <p class="sub">※ 성적과 반 통계에는 첫 번째 플레이 기록을 기준으로 합니다.</p>`;
+  $('btnRf').disabled = session.guest;
+  $('btnRf').onclick = async () => {
+    const tasks = [];
+    if (!reachedSbar && $('rfSbar').value.trim()) tasks.push(record('saveReflection', { attemptId: S.attemptId, type: 'sbar', text: $('rfSbar').value }));
+    if ($('rfText').value.trim()) tasks.push(record('saveReflection', { attemptId: S.attemptId, type: 'reflection', text: $('rfText').value }));
+    if (!tasks.length) return toast('내용을 입력해 주세요.');
+    await Promise.all(tasks); toast('저장했습니다.'); $('btnRf').disabled = true;
+  };
+  const sv = {};
+  document.querySelectorAll('.lik .scale').forEach((g) => g.querySelectorAll('button').forEach((b) => b.onclick = () => {
+    sv[g.dataset.k] = Number(b.dataset.v);
+    g.querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b));
+    $('btnSv').disabled = session.guest || Object.keys(sv).length < 3;
+  }));
+  $('btnSv').onclick = async () => {
+    $('btnSv').disabled = true;
+    await record('saveSurvey', Object.assign({ attemptId: S.attemptId, comment: $('svCmt').value }, sv));
+    toast('설문을 제출했습니다. 감사합니다!'); $('btnSv').textContent = '제출 완료';
+  };
+  $('btnAgain').onclick = () => show('scrBrief');
+  $('btnOut').onclick = () => { sessionStorage.removeItem('simSession'); location.reload(); };
+  show('scrResult');
+}
+
+/* 이미 로그인된 세션이면 브리핑으로 */
+if (session.token || session.guest) toBrief();
+</script>
+</body>
+</html>
