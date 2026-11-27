@@ -338,3 +338,5 @@ window.SCENARIO = {
     '침착한 판단과 협력은 생명을 살리는 가장 중요한 시작입니다.'
   ]
 };
+
+window.CLIP_NAMES = {"media/clip-55e283a2ce.mp4":"Seedance 2_5 - Scene 1_수정.mp4","media/clip-1cd71b4115.mov":"Seedance 2_5 - Scene 2.mov","media/clip-f7d9b4906b.mov":"Seedance 2_5 - Scene 3-1.mov","media/clip-fbb2c622b9.mov":"Seedance 2_5 - Scene 3-2.mov","media/clip-d59756b191.mov":"Seedance 2_5 -scene4 .mov","media/clip-78de7f59c2.mov":"Seedance 2_5 - Scene 5.mov","media/clip-8a2032addb.mov":"Seedance 2_5 - 환자가 가슴을 움켜잡고 있는 영상.mov","media/clip-aa4efa1371.mov":"Seedance 2_5 - 간호사가 다가와 환자상태를 확인하는 영상.mov","media/clip-d72f5f2b84.mp4":"W2.mp4","media/clip-29a2dd1e42.mp4":"W4.mp4","media/clip-e686dc524b.mp4":"W8.mp4"};

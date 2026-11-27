@@ -46,6 +46,7 @@
   .who { font-size: 14px; color: var(--ink-2); }
   .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 14px; overflow: hidden;
            border: 1px solid var(--line); }
+  #codeTag { position: absolute; left: 10px; top: 10px; z-index: 30; background: rgba(255, 214, 0, .92); color: #111; font: 700 14px/1.35 system-ui, sans-serif; padding: 5px 9px; border-radius: 6px; pointer-events: none; white-space: pre; }
   .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
   .stage.dim video, .stage.dim .ph { filter: brightness(.35) blur(1px); transition: filter .4s; }
   /* 결정 순간에는 영상 영역을 줄여 질문이 한 화면에 보이게 */
@@ -228,6 +229,7 @@
     <div class="topbar"><strong id="playTitle">재난·응급 시뮬레이션</strong><span class="who" id="who2"></span></div>
     <div class="stage" id="stage">
       <video id="vid" playsinline preload="auto"></video>
+      <div id="codeTag" class="hidden"></div>
       <div class="ph hidden" id="ph"><span class="tag">임시 컷 · 영상 제작 예정</span><div class="t" id="phT"></div><div class="d" id="phD"></div></div>
       <div class="hud" id="hud"></div>
       <div class="banner hidden" id="banner"></div>
@@ -383,6 +385,17 @@ function judge(n) {
 let skipFlag = false;
 $('btnSkip').onclick = () => { skipFlag = true; vid.pause(); speechSynthesis.cancel(); };
 const vid = $('vid');
+// 검수용 장면 코드 표시: 주소 끝에 ?code=1 → 켜기(이 브라우저에 기억), ?code=0 → 끄기. 학생 화면에는 나오지 않음
+const CODE = (() => { const q = new URLSearchParams(location.search).get('code'); if (q !== null) localStorage.setItem('showCode', q === '1' ? '1' : ''); return !!localStorage.getItem('showCode'); })();
+let codeInfo = { id: '', i: 0, n: 0, file: '' };
+const showCode = () => {
+  if (!CODE) return;
+  const el = $('codeTag'), c = codeInfo;
+  el.classList.remove('hidden');
+  el.textContent = c.n ? `${c.id} · 영상 ${c.i}/${c.n} · ${c.file}
+${vid.currentTime.toFixed(1)}초 / ${(vid.duration || 0).toFixed(1)}초` : `${c.id} · 임시 컷(영상 없음)`;
+};
+vid.addEventListener('timeupdate', showCode);
 
 async function playNode(id, n) {
   skipFlag = false;
@@ -393,8 +406,10 @@ async function playNode(id, n) {
   $('btnSkip').classList.remove('hidden');
   const clips = (n.clips || []).slice();
   let played = false;
+  codeInfo = { id, i: 0, n: clips.length, file: '' }; showCode();
   for (const src of clips) {
     if (skipFlag) break;
+    codeInfo.i++; codeInfo.file = ((window.CLIP_NAMES || {})[src] || decodeURI(src).split('/').pop()).replace(/^Seedance 2_5 -s*/, ''); showCode();
     const ok = await playClip(src, n.lines);
     if (ok) played = true;
   }
