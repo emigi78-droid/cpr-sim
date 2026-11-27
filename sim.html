@@ -407,11 +407,15 @@ async function playNode(id, n) {
   const clips = (n.clips || []).slice();
   let played = false;
   codeInfo = { id, i: 0, n: clips.length, file: '' }; showCode();
-  for (const src of clips) {
+  for (const alt of clips) {
     if (skipFlag) break;
-    codeInfo.i++; codeInfo.file = ((window.CLIP_NAMES || {})[src] || decodeURI(src).split('/').pop()).replace(/^Seedance 2_5 -s*/, ''); showCode();
-    const ok = await playClip(src, n.lines);
-    if (ok) played = true;
+    codeInfo.i++;
+    // A|B: A를 재생해 보고 파일이 없으면 B (게시본은 publish.js가 미리 하나로 정해 둠)
+    for (const src of alt.split('|').filter(Boolean)) {
+      codeInfo.file = ((window.CLIP_NAMES || {})[src] || decodeURI(src).split('/').pop()).replace(/^Seedance 2_5 -\s*/, ''); showCode();
+      const ok = await playClip(src, n.lines);
+      if (ok) { played = true; break; }
+    }
   }
   if (!played && !skipFlag) await playPlaceholder(n);
   $('btnSkip').classList.add('hidden');

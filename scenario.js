@@ -22,11 +22,12 @@ window.SCENARIO = {
               ['간호사', '비가 너무 많이 오네.']],
       next: 'N02' },
     N02: { type: 'video', title: '누수 · 낙석 · 붕괴',
-      clips: ['media/clip-1cd71b4115.mov', 'media/clip-f7d9b4906b.mov', 'media/clip-fbb2c622b9.mov', 'media/clip-d59756b191.mov'],
+      // A|B 형식 = A가 있으면 A, 없으면 B (새 컷이 통과하기 전까지 예전 클립 사용). 예전 Scene 3-2는 낙석 반복이라 뺌(2026-11-27)
+      clips: ['media/clip-897401b97f.mp4', 'media/clip-b357f36ae6.mp4', 'media/clip-b0dc1a119a.mp4'],
       desc: '터널 천장에서 물이 새고, 콘크리트 조각이 떨어지다가 터널 일부가 무너진다.',
       lines: [['환자', '물이 새는 것 같은데…'], ['일반인', '돌이 떨어지고 있어요!'], ['행인', '터널이 무너졌어요!']],
       next: 'N03' },
-    N03: { type: 'video', title: '혼란', clips: ['media/clip-78de7f59c2.mov'],
+    N03: { type: 'video', title: '혼란', clips: ['media/clip-e09d0a3224.mp4', 'media/clip-73b3606464.mp4'],
       desc: '조명이 꺼지고 비상등만 깜박인다. 사람들이 비명을 지르며 차에서 나온다. 어디선가 신음 소리가 들린다.',
       lines: [['일반인', '다들 괜찮으세요?'], ['???', '살려주세요…']],
       next: 'DP1' },
@@ -339,4 +340,4 @@ window.SCENARIO = {
   ]
 };
 
-window.CLIP_NAMES = {"media/clip-55e283a2ce.mp4":"Seedance 2_5 - Scene 1_수정.mp4","media/clip-1cd71b4115.mov":"Seedance 2_5 - Scene 2.mov","media/clip-f7d9b4906b.mov":"Seedance 2_5 - Scene 3-1.mov","media/clip-fbb2c622b9.mov":"Seedance 2_5 - Scene 3-2.mov","media/clip-d59756b191.mov":"Seedance 2_5 -scene4 .mov","media/clip-78de7f59c2.mov":"Seedance 2_5 - Scene 5.mov","media/clip-8a2032addb.mov":"Seedance 2_5 - 환자가 가슴을 움켜잡고 있는 영상.mov","media/clip-aa4efa1371.mov":"Seedance 2_5 - 간호사가 다가와 환자상태를 확인하는 영상.mov","media/clip-d72f5f2b84.mp4":"W2.mp4","media/clip-29a2dd1e42.mp4":"W4.mp4","media/clip-e686dc524b.mp4":"W8.mp4"};
+window.CLIP_NAMES = {"media/clip-55e283a2ce.mp4":"Seedance 2_5 - Scene 1_수정.mp4","media/clip-897401b97f.mp4":"N02_1_누수_4-10초.mp4","media/clip-b357f36ae6.mp4":"N02_2_낙석_0-8+12-15초.mp4","media/clip-b0dc1a119a.mp4":"N02-4.mp4","media/clip-e09d0a3224.mp4":"N03-1.mp4","media/clip-73b3606464.mp4":"N03-2.mp4","media/clip-8a2032addb.mov":"Seedance 2_5 - 환자가 가슴을 움켜잡고 있는 영상.mov","media/clip-aa4efa1371.mov":"Seedance 2_5 - 간호사가 다가와 환자상태를 확인하는 영상.mov","media/clip-d72f5f2b84.mp4":"W2.mp4","media/clip-29a2dd1e42.mp4":"W4.mp4","media/clip-e686dc524b.mp4":"W8.mp4"};
